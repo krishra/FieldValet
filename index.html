@@ -5,6 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FieldValet</title>
   <link rel="stylesheet" href="styles.css" />
+  <script>
+    // Apply saved/preferred theme before paint to avoid a flash.
+    (function () {
+      try {
+        var saved = localStorage.getItem("fv-theme");
+        var theme = saved || (window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <header class="topbar">
@@ -14,6 +25,7 @@
     </div>
     <nav class="tabs" id="primary-nav"><!-- primary tabs injected by app.js --></nav>
     <div class="topbar-right">
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle color theme"></button>
       <span class="env-pill">Preview</span>
     </div>
   </header>

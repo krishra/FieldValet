@@ -60,53 +60,12 @@ function renderSecondary() {
   });
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-}
-
-async function renderSites(viewEl) {
-  viewEl.innerHTML = `
-    <h1 class="page-title">Sites</h1>
-    <p class="page-sub">Sites › Site info</p>
-    <div id="sites-status" class="muted">Loading locations…</div>
-    <div id="sites-list" class="site-list"></div>`;
-
-  const statusEl = viewEl.querySelector("#sites-status");
-  const listEl = viewEl.querySelector("#sites-list");
-
-  try {
-    const res = await fetch("/api/locations");
-    if (!res.ok) throw new Error(`API returned ${res.status}`);
-    const data = await res.json();
-    const locations = data.locations || [];
-    statusEl.textContent = `${locations.length} locations`;
-    listEl.innerHTML = locations
-      .map(
-        (l) => `
-        <div class="site-row">
-          <div class="site-name">${escapeHtml(l.name)}</div>
-          <div class="site-addr">${escapeHtml(l.address)}</div>
-        </div>`
-      )
-      .join("");
-  } catch (err) {
-    statusEl.innerHTML = `<span class="error">Couldn't load locations (${escapeHtml(err.message)}). The API may still be deploying.</span>`;
-  }
-}
-
 function renderView() {
   const tab = NAV.find((t) => t.id === state.tab);
   const sub = tab.subtabs[state.sub];
-  const view = document.getElementById("view");
-
-  if (state.tab === "sites" && state.sub === 0) {
-    renderSites(view);
-    return;
-  }
-
   const title = tab.label;
   const where = sub ? `${tab.label} › ${sub}` : tab.label;
-  view.innerHTML = `
+  document.getElementById("view").innerHTML = `
     <h1 class="page-title">${title}</h1>
     <p class="page-sub">${where}</p>
     <div class="placeholder">
@@ -121,6 +80,38 @@ function render() {
   renderView();
 }
 
+// ---- Theme toggle (light/dark) ----
+// The initial theme is applied in index.html before paint to avoid a flash.
+// This wires the sidebar toggle button and persists the choice to localStorage.
+function currentTheme() {
+  return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+}
+
+function setTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  try { localStorage.setItem("fv-theme", theme); } catch (e) {}
+  updateThemeToggle();
+}
+
+function updateThemeToggle() {
+  const btn = document.getElementById("theme-toggle");
+  if (!btn) return;
+  const dark = currentTheme() === "dark";
+  btn.textContent = dark ? "☀️" : "🌙";
+  btn.setAttribute("title", dark ? "Switch to light theme" : "Switch to dark theme");
+  btn.setAttribute("aria-pressed", String(dark));
+}
+
+function initThemeToggle() {
+  const btn = document.getElementById("theme-toggle");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    setTheme(currentTheme() === "dark" ? "light" : "dark");
+  });
+  updateThemeToggle();
+}
+
 window.addEventListener("hashchange", () => { parseHash(); render(); });
 parseHash();
 render();
+initThemeToggle();
