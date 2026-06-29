@@ -1,59 +1,29 @@
-const { TableClient } = require("@azure/data-tables");
-const seed = require("../locations.json");
-
-const TABLE = "locations";
-const PARTITION = "site";
-
-function rowKey(name) {
-  // Table Storage keys forbid / \ # ? and control chars; base64url is safe.
-  return Buffer.from(name, "utf8").toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-async function seedTable(client) {
-  const batchSize = 20;
-  for (let i = 0; i < seed.length; i += batchSize) {
-    const chunk = seed.slice(i, i + batchSize);
-    await Promise.all(
-      chunk.map((s) =>
-        client.upsertEntity(
-          { partitionKey: PARTITION, rowKey: rowKey(s.name), name: s.name, address: s.address },
-          "Replace"
-        )
-      )
-    );
-  }
-}
+const { requireSession, json } = require("../shared/auth");
+const { tableClient, LOCATIONS_TABLE } = require("../shared/storage");
 
 module.exports = async function (context, req) {
-  const conn = process.env.STORAGE_CONNECTION;
-  if (!conn) {
-    context.res = { status: 500, headers: { "Content-Type": "application/json" }, body: { error: "STORAGE_CONNECTION app setting is not configured." } };
-    return;
-  }
+  const session = requireSession(context, req);
+  if (!session) return;
+  const tenantId = session.tid;
 
   try {
-    const client = TableClient.fromConnectionString(conn, TABLE);
+    const client = tableClient(LOCATIONS_TABLE);
     await client.createTable(); // no-op if it already exists
 
-    let rows = [];
-    for await (const e of client.listEntities()) {
-      rows.push({ name: e.name, address: e.address });
-    }
-
-    if (rows.length === 0) {
-      await seedTable(client);
-      rows = seed.map((s) => ({ name: s.name, address: s.address }));
+    // Tenant isolation: only ever list rows in this tenant's partition.
+    const rows = [];
+    const iter = client.listEntities({
+      queryOptions: { filter: `PartitionKey eq '${tenantId.replace(/'/g, "''")}'` },
+    });
+    for await (const e of iter) {
+      rows.push({ name: e.name, address: e.address || "" });
     }
 
     rows.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
 
-    context.res = {
-      status: 200,
-      headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" },
-      body: { count: rows.length, locations: rows },
-    };
+    json(context, 200, { count: rows.length, locations: rows }, { "Cache-Control": "no-cache" });
   } catch (err) {
     context.log.error("GetLocations failed", err);
-    context.res = { status: 500, headers: { "Content-Type": "application/json" }, body: { error: String(err && err.message || err) } };
+    json(context, 500, { error: String((err && err.message) || err) });
   }
 };

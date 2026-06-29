@@ -1,9 +1,13 @@
 const { requireSession, json } = require("../shared/auth");
 
 module.exports = async function (context, req) {
-  // Require a valid session so the Azure Maps key is never exposed to anonymous callers.
   const session = requireSession(context, req);
   if (!session) return;
 
-  json(context, 200, { azureMapsKey: process.env.AZURE_MAPS_KEY || "" });
+  json(context, 200, {
+    fullName: session.name,
+    email: session.email,
+    tenantId: session.tid,
+    role: session.role || "member",
+  });
 };

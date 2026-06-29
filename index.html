@@ -19,16 +19,54 @@
     })();
   </script>
 </head>
-<body>
+<body class="pre-auth">
+  <!-- Login screen — shown until /api/auth/me confirms a session -->
+  <div id="login-screen" class="login-screen" hidden>
+    <form id="login-form" class="login-card" novalidate>
+      <div class="login-brand">
+        <span class="logo">FV</span>
+        <span class="brand-name">FieldValet</span>
+      </div>
+      <h1 class="login-title">Sign in</h1>
+      <p class="login-sub">Welcome back. Sign in to your workspace to continue.</p>
+      <div class="login-field">
+        <label class="login-label" for="login-email">Email</label>
+        <input id="login-email" class="login-input" type="email" autocomplete="username"
+               placeholder="you@company.com" required />
+      </div>
+      <div class="login-field">
+        <label class="login-label" for="login-password">Password</label>
+        <input id="login-password" class="login-input" type="password" autocomplete="current-password"
+               placeholder="••••••••" required />
+      </div>
+      <div id="login-error" class="login-error" hidden></div>
+      <button type="submit" class="btn-primary login-submit" id="login-submit">Sign in</button>
+    </form>
+  </div>
+
   <header class="topbar">
     <div class="brand">
       <span class="logo">FV</span>
       <span class="brand-name">FieldValet</span>
     </div>
     <nav class="tabs" id="primary-nav"><!-- primary tabs injected by app.js --></nav>
-    <div class="topbar-right">
-      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle color theme"></button>
-      <span class="env-pill">Preview</span>
+
+    <div class="sidebar-foot">
+      <div class="profile-menu" id="profile-menu" hidden>
+        <button type="button" class="profile-menu-item" id="logout-btn">Sign out</button>
+      </div>
+      <button class="profile-pill" id="profile-pill" type="button" hidden aria-haspopup="true" aria-expanded="false">
+        <span class="avatar" id="profile-avatar"></span>
+        <span class="profile-meta">
+          <span class="profile-name" id="profile-name"></span>
+          <span class="profile-email" id="profile-email"></span>
+        </span>
+        <span class="profile-caret" aria-hidden="true">⌄</span>
+      </button>
+      <div class="sidebar-tools">
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle color theme"></button>
+        <span class="env-pill">Preview</span>
+      </div>
     </div>
   </header>
 

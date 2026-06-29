@@ -12,6 +12,137 @@ const NAV = [
 
 const state = { tab: "dashboard", sub: 0 };
 
+// ---- Auth ----
+let currentUser = null;
+
+// Fetch wrapper that always sends the session cookie and bounces to the login
+// screen if the session is missing/expired.
+async function apiFetch(url, opts) {
+  const res = await fetch(url, Object.assign({ credentials: "same-origin" }, opts || {}));
+  if (res.status === 401) {
+    forceLogout();
+    throw new Error("Your session has expired. Please sign in again.");
+  }
+  return res;
+}
+
+async function fetchMe() {
+  try {
+    const res = await fetch("/api/auth/me", { credentials: "same-origin" });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    return null;
+  }
+}
+
+function initials(name) {
+  const parts = String(name || "").trim().split(/\s+/);
+  if (parts.length === 0 || !parts[0]) return "?";
+  return ((parts[0][0] || "") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+}
+
+function renderProfilePill() {
+  const pill = document.getElementById("profile-pill");
+  if (!pill || !currentUser) return;
+  document.getElementById("profile-avatar").textContent = initials(currentUser.fullName);
+  document.getElementById("profile-name").textContent = currentUser.fullName;
+  document.getElementById("profile-email").textContent = currentUser.email;
+  pill.hidden = false;
+
+  const menu = document.getElementById("profile-menu");
+  pill.onclick = (e) => {
+    e.stopPropagation();
+    const open = menu.hidden;
+    menu.hidden = !open;
+    pill.setAttribute("aria-expanded", String(open));
+  };
+  // Close the menu when clicking anywhere else.
+  document.addEventListener("click", () => {
+    if (!menu.hidden) {
+      menu.hidden = true;
+      pill.setAttribute("aria-expanded", "false");
+    }
+  });
+  document.getElementById("logout-btn").onclick = handleLogout;
+}
+
+function showLogin() {
+  document.body.classList.add("pre-auth");
+  const screen = document.getElementById("login-screen");
+  screen.hidden = false;
+  const form = document.getElementById("login-form");
+  if (!form.dataset.wired) {
+    form.dataset.wired = "1";
+    form.addEventListener("submit", handleLogin);
+  }
+  document.getElementById("login-email").focus();
+}
+
+function showApp() {
+  document.body.classList.remove("pre-auth");
+  document.getElementById("login-screen").hidden = true;
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById("login-email").value.trim();
+  const password = document.getElementById("login-password").value;
+  const errEl = document.getElementById("login-error");
+  const btn = document.getElementById("login-submit");
+  errEl.hidden = true;
+
+  if (!email || !password) {
+    errEl.textContent = "Enter your email and password.";
+    errEl.hidden = false;
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Signing in…";
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Sign-in failed (HTTP ${res.status}).`);
+
+    currentUser = data;
+    document.getElementById("login-password").value = "";
+    showApp();
+    renderProfilePill();
+    parseHash();
+    render();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.hidden = false;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Sign in";
+  }
+}
+
+async function handleLogout() {
+  try {
+    await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
+  } catch (e) {
+    /* ignore — clear client state regardless */
+  }
+  forceLogout();
+}
+
+// Reset to the signed-out state (used on logout and on any 401 from the API).
+function forceLogout() {
+  currentUser = null;
+  _sitesCache = null;
+  const pill = document.getElementById("profile-pill");
+  if (pill) pill.hidden = true;
+  showLogin();
+}
+
 function slug(s) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
@@ -92,7 +223,7 @@ async function renderSitesList() {
 
   if (!_sitesCache) {
     try {
-      const res = await fetch("/api/locations");
+      const res = await apiFetch("/api/locations");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       _sitesCache = data.locations || [];
@@ -369,7 +500,7 @@ async function initGeofenceMap() {
 
   let mapsKey;
   try {
-    const res = await fetch("/api/config");
+    const res = await apiFetch("/api/config");
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const cfg = await res.json();
     mapsKey = cfg.azureMapsKey;
@@ -532,7 +663,7 @@ async function handleSaveSite() {
   saveBtn.textContent = "Saving…";
 
   try {
-    const res = await fetch("/api/locations", {
+    const res = await apiFetch("/api/locations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -593,7 +724,21 @@ function initThemeToggle() {
   updateThemeToggle();
 }
 
-window.addEventListener("hashchange", () => { parseHash(); render(); });
-parseHash();
-render();
-initThemeToggle();
+window.addEventListener("hashchange", () => { if (currentUser) { parseHash(); render(); } });
+
+// ---- Boot: gate the app behind authentication ----
+async function boot() {
+  initThemeToggle(); // theme toggle works on the login screen too
+  const user = await fetchMe();
+  if (user) {
+    currentUser = user;
+    showApp();
+    renderProfilePill();
+    parseHash();
+    render();
+  } else {
+    showLogin();
+  }
+}
+
+boot();

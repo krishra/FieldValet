@@ -590,3 +590,146 @@ body {
   background: var(--brand-soft);
   border-top: 1px solid var(--line);
 }
+
+/* ===== Auth: hide the app shell until signed in ===== */
+.pre-auth .topbar,
+.pre-auth .subtabs,
+.pre-auth .view { visibility: hidden; }
+
+/* ===== Login screen ===== */
+.login-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, var(--brand-soft), transparent 70%),
+    var(--bg);
+}
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  padding: 32px 30px;
+  animation: fv-fade 0.32s ease;
+}
+.login-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+.login-brand .brand-name { color: var(--ink); font-size: 16px; }
+.login-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 4px; }
+.login-sub { color: var(--muted); font-size: 13px; margin: 0 0 22px; }
+.login-field { margin-bottom: 14px; }
+.login-label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
+.login-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.login-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.login-submit { width: 100%; margin-top: 8px; padding: 11px; font-size: 14px; }
+.login-error {
+  margin: 4px 0 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff0f0;
+  border: 1px solid #fca5a5;
+  color: #b91c1c;
+  font-size: 13px;
+}
+[data-theme="dark"] .login-error { background: #2d1515; border-color: #7f1d1d; color: #fca5a5; }
+
+/* ===== Sidebar footer (pinned to bottom of the left rail) ===== */
+.sidebar-foot { margin-top: auto; position: relative; display: flex; flex-direction: column; gap: 10px; padding: 8px; }
+.sidebar-tools { display: flex; align-items: center; gap: 10px; }
+
+.theme-toggle {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--sidebar-ink-strong);
+  cursor: pointer;
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s ease;
+}
+.theme-toggle:hover { background: rgba(255, 255, 255, 0.12); }
+
+/* ===== Profile pill ===== */
+.profile-pill {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.profile-pill:hover { background: var(--sidebar-hover); border-color: rgba(255, 255, 255, 0.18); }
+.avatar {
+  flex-shrink: 0;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+.profile-meta { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.profile-name {
+  font-size: 13px; font-weight: 600; color: var(--sidebar-ink-strong);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.profile-email {
+  font-size: 11px; color: var(--sidebar-ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.profile-caret { color: var(--sidebar-ink); font-size: 12px; flex-shrink: 0; }
+
+.profile-menu {
+  position: absolute;
+  left: 8px; right: 8px;
+  bottom: calc(100% - 2px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow-md);
+  padding: 6px;
+  z-index: 20;
+}
+.profile-menu-item {
+  appearance: none;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 9px 10px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  transition: background 0.12s ease;
+}
+.profile-menu-item:hover { background: var(--surface-2); }

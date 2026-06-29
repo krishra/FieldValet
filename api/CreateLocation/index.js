@@ -1,7 +1,5 @@
-const { TableClient } = require("@azure/data-tables");
-
-const TABLE = "locations";
-const PARTITION = "site";
+const { requireSession, json } = require("../shared/auth");
+const { tableClient, LOCATIONS_TABLE } = require("../shared/storage");
 
 function rowKey(name) {
   return Buffer.from(name, "utf8")
@@ -12,32 +10,23 @@ function rowKey(name) {
 }
 
 module.exports = async function (context, req) {
-  const conn = process.env.STORAGE_CONNECTION;
-  if (!conn) {
-    context.res = {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-      body: { error: "STORAGE_CONNECTION app setting is not configured." },
-    };
-    return;
-  }
+  const session = requireSession(context, req);
+  if (!session) return;
+  const tenantId = session.tid;
 
   const body = req.body;
   if (!body || !body.name || !body.name.trim()) {
-    context.res = {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-      body: { error: "name is required." },
-    };
+    json(context, 400, { error: "name is required." });
     return;
   }
 
   try {
-    const client = TableClient.fromConnectionString(conn, TABLE);
+    const client = tableClient(LOCATIONS_TABLE);
     await client.createTable();
 
     const entity = {
-      partitionKey: PARTITION,
+      // Tenant isolation: every site is stored under its tenant's partition.
+      partitionKey: tenantId,
       rowKey: rowKey(body.name.trim()),
       // Basic Info
       name: body.name.trim(),
@@ -70,17 +59,9 @@ module.exports = async function (context, req) {
 
     await client.upsertEntity(entity, "Replace");
 
-    context.res = {
-      status: 201,
-      headers: { "Content-Type": "application/json" },
-      body: { success: true, name: entity.name },
-    };
+    json(context, 201, { success: true, name: entity.name });
   } catch (err) {
     context.log.error("CreateLocation failed", err);
-    context.res = {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-      body: { error: String((err && err.message) || err) },
-    };
+    json(context, 500, { error: String((err && err.message) || err) });
   }
 };
