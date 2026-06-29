@@ -221,3 +221,75 @@ body {
   background: linear-gradient(90deg, var(--brand), var(--brand-2));
 }
 .placeholder strong { display: block; color: var(--ink); font-size: 16px; margin-bottom: 6px; }
+
+/* ===== Sites list ===== */
+.sites-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.sites-search {
+  flex: 1;
+  max-width: 360px;
+  padding: 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.sites-search:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+.sites-count { font-size: 12px; color: var(--muted); }
+
+.sites-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+.sites-table thead th {
+  padding: 11px 18px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+}
+.sites-table tbody tr {
+  transition: background 0.12s ease;
+}
+.sites-table tbody tr:hover { background: var(--brand-soft); }
+.sites-table tbody td {
+  padding: 13px 18px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--line);
+}
+.sites-table tbody tr:last-child td { border-bottom: none; }
+.site-name { font-weight: 600; color: var(--ink); }
+.site-address { color: var(--muted); }
+
+.sites-loading {
+  padding: 64px 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+.sites-empty {
+  padding: 48px 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}

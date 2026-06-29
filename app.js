@@ -65,6 +65,12 @@ function renderView() {
   const sub = tab.subtabs[state.sub];
   const title = tab.label;
   const where = sub ? `${tab.label} › ${sub}` : tab.label;
+
+  if (tab.id === "sites" && sub === "Site info") {
+    renderSitesList();
+    return;
+  }
+
   document.getElementById("view").innerHTML = `
     <h1 class="page-title">${title}</h1>
     <p class="page-sub">${where}</p>
@@ -72,6 +78,81 @@ function renderView() {
       <strong>${where}</strong>
       This page is intentionally empty for now — navigation shell only.
     </div>`;
+}
+
+// ---- Sites list ----
+let _sitesCache = null;
+
+async function renderSitesList() {
+  const view = document.getElementById("view");
+  view.innerHTML = `
+    <h1 class="page-title">Sites</h1>
+    <p class="page-sub">Sites › Site info</p>
+    <div class="sites-loading">Loading sites…</div>`;
+
+  if (!_sitesCache) {
+    try {
+      const res = await fetch("/api/locations");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      _sitesCache = data.locations || [];
+    } catch (err) {
+      view.innerHTML = `
+        <h1 class="page-title">Sites</h1>
+        <p class="page-sub">Sites › Site info</p>
+        <div class="placeholder"><strong>Could not load sites</strong>${err.message}</div>`;
+      return;
+    }
+  }
+
+  view.innerHTML = `
+    <h1 class="page-title">Sites</h1>
+    <p class="page-sub">Sites › Site info</p>
+    <div class="sites-toolbar">
+      <input id="sites-search" class="sites-search" type="search" placeholder="Search by name or address…" />
+      <span id="sites-count" class="sites-count"></span>
+    </div>
+    <table class="sites-table">
+      <thead><tr><th>Name</th><th>Address</th></tr></thead>
+      <tbody id="sites-tbody"></tbody>
+    </table>`;
+
+  function filterSites(q) {
+    const lower = q.toLowerCase();
+    return _sitesCache.filter(
+      (s) => s.name.toLowerCase().includes(lower) || s.address.toLowerCase().includes(lower)
+    );
+  }
+
+  function paintRows(sites) {
+    const tbody = document.getElementById("sites-tbody");
+    const count = document.getElementById("sites-count");
+    if (!tbody) return;
+    count.textContent = `${sites.length} site${sites.length !== 1 ? "s" : ""}`;
+    if (sites.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="2" class="sites-empty">No sites match your search.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = sites
+      .map(
+        (s) =>
+          `<tr>
+            <td class="site-name">${escHtml(s.name)}</td>
+            <td class="site-address">${escHtml(s.address)}</td>
+          </tr>`
+      )
+      .join("");
+  }
+
+  paintRows(_sitesCache);
+
+  document.getElementById("sites-search").addEventListener("input", (e) => {
+    paintRows(filterSites(e.target.value.trim()));
+  });
+}
+
+function escHtml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 function render() {
