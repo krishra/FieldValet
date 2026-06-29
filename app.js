@@ -111,6 +111,7 @@ async function renderSitesList() {
     <div class="sites-toolbar">
       <input id="sites-search" class="sites-search" type="search" placeholder="Search by name or address…" />
       <span id="sites-count" class="sites-count"></span>
+      <button class="btn-primary" id="new-site-btn">+ New Site</button>
     </div>
     <table class="sites-table">
       <thead><tr><th>Name</th><th>Address</th></tr></thead>
@@ -120,7 +121,7 @@ async function renderSitesList() {
   function filterSites(q) {
     const lower = q.toLowerCase();
     return _sitesCache.filter(
-      (s) => s.name.toLowerCase().includes(lower) || s.address.toLowerCase().includes(lower)
+      (s) => s.name.toLowerCase().includes(lower) || (s.address || "").toLowerCase().includes(lower)
     );
   }
 
@@ -138,7 +139,7 @@ async function renderSitesList() {
         (s) =>
           `<tr>
             <td class="site-name">${escHtml(s.name)}</td>
-            <td class="site-address">${escHtml(s.address)}</td>
+            <td class="site-address">${escHtml(s.address || "")}</td>
           </tr>`
       )
       .join("");
@@ -149,6 +150,309 @@ async function renderSitesList() {
   document.getElementById("sites-search").addEventListener("input", (e) => {
     paintRows(filterSites(e.target.value.trim()));
   });
+
+  document.getElementById("new-site-btn").addEventListener("click", () => openNewSiteDrawer());
+}
+
+// ---- New Site drawer ----
+function openNewSiteDrawer() {
+  if (document.getElementById("site-drawer")) return;
+
+  const overlay = document.createElement("div");
+  overlay.id = "site-drawer-overlay";
+  overlay.className = "drawer-overlay";
+  overlay.addEventListener("click", closeDrawer);
+
+  const drawer = document.createElement("div");
+  drawer.id = "site-drawer";
+  drawer.className = "drawer";
+  drawer.innerHTML = `
+    <div class="drawer-header">
+      <h2 class="drawer-title">New Site</h2>
+      <button class="drawer-close" id="drawer-close-btn" aria-label="Close">✕</button>
+    </div>
+    <div class="drawer-body">
+      <form id="new-site-form" novalidate>
+
+        <fieldset class="form-section">
+          <legend>Basic Info</legend>
+          <div class="form-row">
+            <label class="form-label required" for="f-name">Location Name</label>
+            <input class="form-input" id="f-name" type="text" required placeholder="e.g. Northgate Medical Center" />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="f-id">ID</label>
+            <input class="form-input" id="f-id" type="text" placeholder="e.g. LOC-0042" />
+          </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <legend>Address</legend>
+          <div class="form-row">
+            <label class="form-label" for="f-address">Address</label>
+            <input class="form-input" id="f-address" type="text" placeholder="Street address" />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="f-address2">Address 2</label>
+            <input class="form-input" id="f-address2" type="text" placeholder="Suite, floor, etc." />
+          </div>
+          <div class="form-row-group">
+            <div class="form-row">
+              <label class="form-label" for="f-city">City</label>
+              <input class="form-input" id="f-city" type="text" />
+            </div>
+            <div class="form-row">
+              <label class="form-label" for="f-state">State / Province</label>
+              <input class="form-input" id="f-state" type="text" />
+            </div>
+            <div class="form-row">
+              <label class="form-label" for="f-zip">ZIP / Postal Code</label>
+              <input class="form-input" id="f-zip" type="text" />
+            </div>
+          </div>
+          <div class="form-row-group">
+            <div class="form-row">
+              <label class="form-label" for="f-country">Country</label>
+              <input class="form-input" id="f-country" type="text" placeholder="e.g. US" />
+            </div>
+            <div class="form-row">
+              <label class="form-label" for="f-timezone">Time Zone</label>
+              <select class="form-input" id="f-timezone">
+                <option value="">— Select —</option>
+                <option>America/New_York</option>
+                <option>America/Chicago</option>
+                <option>America/Denver</option>
+                <option>America/Los_Angeles</option>
+                <option>America/Anchorage</option>
+                <option>Pacific/Honolulu</option>
+                <option>America/Phoenix</option>
+                <option>UTC</option>
+              </select>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <legend>Breaks</legend>
+          <p class="form-hint">Default break settings for this location</p>
+          <div class="form-row-group">
+            <div class="form-row">
+              <label class="form-label" for="f-break-length">Length (min)</label>
+              <input class="form-input" id="f-break-length" type="number" min="0" placeholder="30" />
+            </div>
+            <div class="form-row">
+              <label class="form-label" for="f-break-status">Status</label>
+              <select class="form-input" id="f-break-status">
+                <option value="">— Select —</option>
+                <option>Active</option>
+                <option>Inactive</option>
+              </select>
+            </div>
+            <div class="form-row form-row-check">
+              <label class="form-label">Paid</label>
+              <input class="form-checkbox" id="f-break-paid" type="checkbox" />
+            </div>
+            <div class="form-row form-row-check">
+              <label class="form-label">Mandatory</label>
+              <input class="form-checkbox" id="f-break-mandatory" type="checkbox" />
+            </div>
+          </div>
+
+          <div class="break-entries-header">
+            <span class="form-hint" style="margin:0">Break types</span>
+            <button type="button" class="btn-secondary btn-sm" id="add-break-btn">+ Add break type</button>
+          </div>
+          <div id="break-entries-list"></div>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <legend>Geofence (GPS)</legend>
+          <div class="form-row form-row-inline">
+            <input class="form-checkbox" id="f-geofence" type="checkbox" />
+            <label class="form-label" for="f-geofence">Enable Mandatory GeoFence Clock In/Out</label>
+          </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <legend>Security Information</legend>
+          <div class="form-row">
+            <label class="form-label" for="f-security">Security Information</label>
+            <div class="rte-toolbar">
+              <button type="button" data-cmd="bold"><b>B</b></button>
+              <button type="button" data-cmd="italic"><i>I</i></button>
+              <button type="button" data-cmd="underline"><u>U</u></button>
+              <button type="button" data-cmd="insertUnorderedList">• List</button>
+            </div>
+            <div class="rte" id="f-security" contenteditable="true" role="textbox" aria-multiline="true"></div>
+          </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <legend>Cleaning Instructions</legend>
+          <div class="form-row">
+            <label class="form-label" for="f-lang">Instruction Language</label>
+            <select class="form-input" id="f-lang">
+              <option value="">— Select —</option>
+              <option>English</option>
+              <option>Spanish</option>
+              <option>French</option>
+              <option>Portuguese</option>
+              <option>Somali</option>
+              <option>Vietnamese</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="f-cleaning">Cleaning Instructions</label>
+            <div class="rte-toolbar">
+              <button type="button" data-cmd="bold"><b>B</b></button>
+              <button type="button" data-cmd="italic"><i>I</i></button>
+              <button type="button" data-cmd="underline"><u>U</u></button>
+              <button type="button" data-cmd="insertUnorderedList">• List</button>
+              <button type="button" data-cmd="insertOrderedList"># List</button>
+            </div>
+            <div class="rte" id="f-cleaning" contenteditable="true" role="textbox" aria-multiline="true"></div>
+          </div>
+        </fieldset>
+
+        <div id="form-error" class="form-error" hidden></div>
+      </form>
+    </div>
+    <div class="drawer-footer">
+      <button type="button" class="btn-ghost" id="cancel-site-btn">Cancel</button>
+      <button type="button" class="btn-primary" id="save-site-btn">Save Site</button>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(drawer);
+
+  // Animate in
+  requestAnimationFrame(() => {
+    overlay.classList.add("open");
+    drawer.classList.add("open");
+  });
+
+  document.getElementById("drawer-close-btn").addEventListener("click", closeDrawer);
+  document.getElementById("cancel-site-btn").addEventListener("click", closeDrawer);
+  document.getElementById("save-site-btn").addEventListener("click", handleSaveSite);
+
+  // Rich text toolbar wiring
+  drawer.querySelectorAll(".rte-toolbar button[data-cmd]").forEach((btn) => {
+    btn.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      document.execCommand(btn.dataset.cmd, false, null);
+    });
+  });
+
+  // Break entries
+  document.getElementById("add-break-btn").addEventListener("click", addBreakEntryRow);
+}
+
+function closeDrawer() {
+  const overlay = document.getElementById("site-drawer-overlay");
+  const drawer = document.getElementById("site-drawer");
+  if (!drawer) return;
+  overlay.classList.remove("open");
+  drawer.classList.remove("open");
+  setTimeout(() => {
+    overlay && overlay.remove();
+    drawer && drawer.remove();
+  }, 280);
+}
+
+let _breakEntryCount = 0;
+
+function addBreakEntryRow() {
+  _breakEntryCount++;
+  const id = _breakEntryCount;
+  const list = document.getElementById("break-entries-list");
+  const row = document.createElement("div");
+  row.className = "break-entry-row";
+  row.dataset.breakId = id;
+  row.innerHTML = `
+    <select class="form-input be-type" title="Type">
+      <option value="">Type</option>
+      <option>Meal</option>
+      <option>Rest</option>
+      <option>Other</option>
+    </select>
+    <input class="form-input be-length" type="number" min="0" placeholder="Min" title="Length (min)" />
+    <select class="form-input be-status" title="Status">
+      <option value="">Status</option>
+      <option>Active</option>
+      <option>Inactive</option>
+    </select>
+    <label class="be-check-label" title="Paid"><input type="checkbox" class="form-checkbox be-paid" /> Paid</label>
+    <label class="be-check-label" title="Mandatory"><input type="checkbox" class="form-checkbox be-mandatory" /> Mand.</label>
+    <button type="button" class="btn-ghost btn-sm be-remove" aria-label="Remove">✕</button>`;
+  row.querySelector(".be-remove").addEventListener("click", () => row.remove());
+  list.appendChild(row);
+}
+
+async function handleSaveSite() {
+  const nameEl = document.getElementById("f-name");
+  const errEl = document.getElementById("form-error");
+  errEl.hidden = true;
+
+  if (!nameEl.value.trim()) {
+    nameEl.focus();
+    errEl.textContent = "Location Name is required.";
+    errEl.hidden = false;
+    return;
+  }
+
+  const breakEntries = [...document.querySelectorAll(".break-entry-row")].map((row) => ({
+    type: row.querySelector(".be-type").value,
+    length: row.querySelector(".be-length").value,
+    status: row.querySelector(".be-status").value,
+    paid: row.querySelector(".be-paid").checked,
+    mandatory: row.querySelector(".be-mandatory").checked,
+  }));
+
+  const payload = {
+    name: nameEl.value.trim(),
+    locationId: document.getElementById("f-id").value.trim(),
+    address: document.getElementById("f-address").value.trim(),
+    address2: document.getElementById("f-address2").value.trim(),
+    city: document.getElementById("f-city").value.trim(),
+    state: document.getElementById("f-state").value.trim(),
+    zip: document.getElementById("f-zip").value.trim(),
+    country: document.getElementById("f-country").value.trim(),
+    timezone: document.getElementById("f-timezone").value,
+    breakLength: document.getElementById("f-break-length").value,
+    breakStatus: document.getElementById("f-break-status").value,
+    breakPaid: document.getElementById("f-break-paid").checked,
+    breakMandatory: document.getElementById("f-break-mandatory").checked,
+    breakEntries,
+    geofenceEnabled: document.getElementById("f-geofence").checked,
+    securityInfo: document.getElementById("f-security").innerHTML,
+    instructionLanguage: document.getElementById("f-lang").value,
+    cleaningInstructions: document.getElementById("f-cleaning").innerHTML,
+  };
+
+  const saveBtn = document.getElementById("save-site-btn");
+  saveBtn.disabled = true;
+  saveBtn.textContent = "Saving…";
+
+  try {
+    const res = await fetch("/api/locations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+    // Add to cache and refresh list
+    _sitesCache = null; // force re-fetch to get server-sorted list
+    closeDrawer();
+    renderSitesList();
+  } catch (err) {
+    errEl.textContent = `Save failed: ${err.message}`;
+    errEl.hidden = false;
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Save Site";
+  }
 }
 
 function escHtml(s) {
