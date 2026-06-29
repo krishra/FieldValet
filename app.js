@@ -267,9 +267,17 @@ function openNewSiteDrawer() {
 
         <fieldset class="form-section">
           <legend>Geofence (GPS)</legend>
-          <div class="form-row form-row-inline">
+          <div class="form-row form-row-inline" style="margin-bottom:14px">
             <input class="form-checkbox" id="f-geofence" type="checkbox" />
             <label class="form-label" for="f-geofence">Enable Mandatory GeoFence Clock In/Out</label>
+          </div>
+          <div id="geofence-map-wrap" class="geofence-map-wrap">
+            <div id="geofence-map" class="geofence-map"></div>
+            <div class="geofence-hint">
+              Use the toolbar on the map to draw a polygon or circle boundary.
+              Only the most recently drawn shape is saved.
+            </div>
+            <div id="geofence-preview" class="geofence-preview" hidden></div>
           </div>
         </fieldset>
 
@@ -336,6 +344,9 @@ function openNewSiteDrawer() {
   document.getElementById("cancel-site-btn").addEventListener("click", closeDrawer);
   document.getElementById("save-site-btn").addEventListener("click", handleSaveSite);
 
+  // Initialize the Azure Maps geofence editor after the drawer has animated in
+  setTimeout(initGeofenceMap, 300);
+
   // Rich text toolbar wiring
   drawer.querySelectorAll(".rte-toolbar button[data-cmd]").forEach((btn) => {
     btn.addEventListener("mousedown", (e) => {
@@ -348,12 +359,84 @@ function openNewSiteDrawer() {
   document.getElementById("add-break-btn").addEventListener("click", addBreakEntryRow);
 }
 
+// ---- Azure Maps geofence ----
+let _geofenceGeoJSON = null;
+let _drawingManager = null;
+
+async function initGeofenceMap() {
+  const container = document.getElementById("geofence-map");
+  if (!container || !window.atlas) return;
+
+  let mapsKey;
+  try {
+    const res = await fetch("/api/config");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const cfg = await res.json();
+    mapsKey = cfg.azureMapsKey;
+  } catch (err) {
+    container.innerHTML = `<p style="padding:16px;color:var(--muted);font-size:13px">Map unavailable: ${err.message}</p>`;
+    return;
+  }
+
+  const map = new atlas.Map("geofence-map", {
+    center: [-122.2, 47.8],
+    zoom: 11,
+    language: "en-US",
+    authOptions: {
+      authType: "subscriptionKey",
+      subscriptionKey: mapsKey,
+    },
+  });
+
+  map.events.add("ready", () => {
+    const drawingManager = new atlas.drawing.DrawingManager(map, {
+      toolbar: new atlas.control.DrawingToolbar({
+        buttons: ["draw-polygon", "draw-circle", "erase-geometry"],
+        position: "top-right",
+        style: "light",
+      }),
+    });
+    _drawingManager = drawingManager;
+
+    map.events.add("drawingcomplete", drawingManager, (shape) => {
+      // Convert to GeoJSON and store
+      const source = drawingManager.getSource();
+      const features = source.toJson().features;
+
+      // Only keep the most recently completed shape
+      const geoJSON = {
+        type: "FeatureCollection",
+        features: features.map((f) => ({
+          type: "Feature",
+          geometry: f.geometry,
+          properties: {},
+        })),
+      };
+
+      _geofenceGeoJSON = geoJSON;
+
+      const preview = document.getElementById("geofence-preview");
+      if (preview) {
+        const coords = features[0] && features[0].geometry && features[0].geometry.coordinates;
+        const type = features[0] && features[0].geometry && features[0].geometry.type;
+        preview.textContent = `Boundary saved: ${type || "shape"} with ${
+          type === "Polygon" && coords ? coords[0].length - 1 + " vertices" :
+          type === "Point" ? "circle center" : "coordinates"
+        }`;
+        preview.hidden = false;
+      }
+    });
+  });
+}
+
 function closeDrawer() {
   const overlay = document.getElementById("site-drawer-overlay");
   const drawer = document.getElementById("site-drawer");
   if (!drawer) return;
   overlay.classList.remove("open");
   drawer.classList.remove("open");
+  _geofenceGeoJSON = null;
+  _drawingManager = null;
   setTimeout(() => {
     overlay && overlay.remove();
     drawer && drawer.remove();
@@ -425,6 +508,7 @@ async function handleSaveSite() {
     breakMandatory: document.getElementById("f-break-mandatory").checked,
     breakEntries,
     geofenceEnabled: document.getElementById("f-geofence").checked,
+    geofenceBoundary: _geofenceGeoJSON ? JSON.stringify(_geofenceGeoJSON) : "",
     securityInfo: document.getElementById("f-security").innerHTML,
     instructionLanguage: document.getElementById("f-lang").value,
     cleaningInstructions: document.getElementById("f-cleaning").innerHTML,

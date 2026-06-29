@@ -564,3 +564,29 @@ body {
   transition: background 0.12s ease, color 0.12s ease;
 }
 .be-remove:hover { background: #fee2e2; color: #b91c1c; }
+
+/* ===== Geofence map ===== */
+.geofence-map-wrap {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.geofence-map {
+  width: 100%;
+  height: 320px;
+}
+.geofence-hint {
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--surface-2);
+  border-top: 1px solid var(--line);
+}
+.geofence-preview {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-top: 1px solid var(--line);
+}

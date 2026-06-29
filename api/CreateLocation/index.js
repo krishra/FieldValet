@@ -59,6 +59,8 @@ module.exports = async function (context, req) {
       breakEntries: JSON.stringify(Array.isArray(body.breakEntries) ? body.breakEntries : []),
       // Geofence
       geofenceEnabled: body.geofenceEnabled === true || body.geofenceEnabled === "true",
+      // GeoJSON string — FeatureCollection with Polygon or Circle geometry
+      geofenceBoundary: body.geofenceBoundary || "",
       // Security
       securityInfo: body.securityInfo || "",
       // Cleaning Instructions
