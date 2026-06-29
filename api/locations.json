@@ -1,0 +1,582 @@
+[
+  {
+    "name": "*Warehouse",
+    "address": "607 SE Everett Mall Way"
+  },
+  {
+    "name": "4211, LLC C/O Ironwood Commercial Real Estate, LLC",
+    "address": "4211 Alderwood Mall Blvd"
+  },
+  {
+    "name": "4310 Colby",
+    "address": "4310 Colby Ave"
+  },
+  {
+    "name": "4310 Colby Urology",
+    "address": "4310 Colby Ave"
+  },
+  {
+    "name": "4310 Providence Infusion",
+    "address": "4310 Colby Ave"
+  },
+  {
+    "name": "555 Dayton LLC",
+    "address": "555 Dayton St"
+  },
+  {
+    "name": "Armstrong HQ",
+    "address": "16219 64th St E"
+  },
+  {
+    "name": "ASBI Behavioral Consulting",
+    "address": "110 W Dayton St"
+  },
+  {
+    "name": "Aurora Ave C/O Ironwood Commercial Real Estate, LLC",
+    "address": "18336 Aurora Ave N"
+  },
+  {
+    "name": "Baxter",
+    "address": "6100 219th St SW"
+  },
+  {
+    "name": "BEE Consulting, LLC",
+    "address": "170 W Dayton St"
+  },
+  {
+    "name": "Beresford Booth PLLC",
+    "address": "145 3rd Ave S"
+  },
+  {
+    "name": "Cascade Investment NW, LLC (Mill Creek Pavilion)",
+    "address": "16030 Bothell Everett Hwy"
+  },
+  {
+    "name": "CBRE 419 Lilly Road",
+    "address": "419 Lilly Rd NE"
+  },
+  {
+    "name": "CBRE Bell Towne Business Center",
+    "address": "4200 6th Ave SE"
+  },
+  {
+    "name": "CBRE Britton Plaza MOB",
+    "address": "2555 Marvin Rd NE"
+  },
+  {
+    "name": "CBRE Centralia Women's Center",
+    "address": "1000 S Scheuber Rd"
+  },
+  {
+    "name": "CBRE Chehalis Family Medicine",
+    "address": "981 S Market Blvd"
+  },
+  {
+    "name": "CBRE Clearview",
+    "address": "17432 WA-9"
+  },
+  {
+    "name": "CBRE Cooper Point Pavilion",
+    "address": "1620 Cooper Point Rd SW"
+  },
+  {
+    "name": "CBRE Everett Broadway Express Care",
+    "address": "13110 Bothell Everett Hwy"
+  },
+  {
+    "name": "CBRE Express Care Lacey",
+    "address": "1350 Marvin Rd NE"
+  },
+  {
+    "name": "CBRE Johannes Medical Park",
+    "address": "149 Lilly Rd NE"
+  },
+  {
+    "name": "CBRE John Gabriel House",
+    "address": "8632 160th Ave NE"
+  },
+  {
+    "name": "CBRE Lake Stevens Express Care",
+    "address": "718 91st Ave NE"
+  },
+  {
+    "name": "CBRE Lilly Road Medical Building",
+    "address": "615 Lilly Rd NE"
+  },
+  {
+    "name": "CBRE Lilly Road Professional Development Building",
+    "address": "128 Lilly Rd NE"
+  },
+  {
+    "name": "CBRE Marysville",
+    "address": "11603 State Ave"
+  },
+  {
+    "name": "CBRE Medical Resource Center - D, E, F",
+    "address": "3525 Ensign Rd NE"
+  },
+  {
+    "name": "CBRE Medical Resource Center - R",
+    "address": "3525 Ensign Rd NE"
+  },
+  {
+    "name": "CBRE Memorial Medical Plaza - Sleep Center",
+    "address": "500 Lilly Rd NE"
+  },
+  {
+    "name": "CBRE Mill Creek",
+    "address": "12800 Bothell Everett Hwy"
+  },
+  {
+    "name": "CBRE Mill Creek Commons",
+    "address": "16708 Bothell Everett Hwy"
+  },
+  {
+    "name": "CBRE Monroe",
+    "address": "19200 N Kelsey St"
+  },
+  {
+    "name": "CBRE Mukilteo [Harbour Pointe]",
+    "address": "4112 Harbour Pointe Blvd SW"
+  },
+  {
+    "name": "CBRE PacMed Canyon Park",
+    "address": "1909 214th St SE"
+  },
+  {
+    "name": "CBRE PacMed Canyon Park Suite 211",
+    "address": "1909 214th St SE"
+  },
+  {
+    "name": "CBRE PacMed Lynnwood",
+    "address": "19401 40th Ave W"
+  },
+  {
+    "name": "CBRE PacMed Totem Lake",
+    "address": "12910 Totem Lake Blvd NE"
+  },
+  {
+    "name": "CBRE PRCS Aberdeen",
+    "address": "954 Anderson Dr"
+  },
+  {
+    "name": "CBRE PRCS Radiantcare Aberdeen",
+    "address": "1200 Basich Blvd"
+  },
+  {
+    "name": "CBRE Providence Lynnwood",
+    "address": "2902 164th St SW"
+  },
+  {
+    "name": "CBRE Providence Medical Plaza",
+    "address": "1800 Cooks Hill Rd"
+  },
+  {
+    "name": "CBRE Providence Medical Plaza Annex",
+    "address": "1720 Cooks Hill Rd"
+  },
+  {
+    "name": "CBRE Providence Professional Center",
+    "address": "1010 S Scheuber Rd"
+  },
+  {
+    "name": "CBRE Providence Regional Cancer System",
+    "address": "4525 3rd Ave SE"
+  },
+  {
+    "name": "CBRE Providence Rochester Family Medical Center",
+    "address": "18313 Paulson St SW"
+  },
+  {
+    "name": "CBRE S Lacey MOB",
+    "address": "4800 College St SE"
+  },
+  {
+    "name": "CBRE Snohomish",
+    "address": "1830 Bickford Ave"
+  },
+  {
+    "name": "CBRE South Sound Center",
+    "address": "719 Sleater Kinney Rd SE"
+  },
+  {
+    "name": "CBRE St Peter Professional Building",
+    "address": "525 Lilly Rd NE"
+  },
+  {
+    "name": "CBRE Swedish Edmonds 76th Pro Commons",
+    "address": "21911 76th Ave W"
+  },
+  {
+    "name": "CBRE Swedish Edmonds Urology",
+    "address": "21822 76th Ave W"
+  },
+  {
+    "name": "CBRE The Clinic at Panorama",
+    "address": "1450 NW Ln SE"
+  },
+  {
+    "name": "CBRE Union Heights Building",
+    "address": "1018 Capitol Way S"
+  },
+  {
+    "name": "CBRE Yelm Medical Plaza",
+    "address": "201 Tahoma Boulevard Southeast"
+  },
+  {
+    "name": "City of Kenmore - City Hall",
+    "address": "18120 68th Ave NE"
+  },
+  {
+    "name": "City of Kenmore - Kenmore Public Works Office",
+    "address": "6700 NE 181st St"
+  },
+  {
+    "name": "City of Kenmore - Town Square - Hangar Building",
+    "address": "6728 NE 181st St"
+  },
+  {
+    "name": "COS - Bellevue Square",
+    "address": "575 Bellevue Square"
+  },
+  {
+    "name": "Custom Truck NW - Shop",
+    "address": "10814 Valley Ave NE"
+  },
+  {
+    "name": "Custom Trucks NW",
+    "address": "300 Valley Ave NE"
+  },
+  {
+    "name": "EBB",
+    "address": "51 W Dayton St"
+  },
+  {
+    "name": "EBJ - Terminal Monthly Janitorial",
+    "address": "1100 Pacific Ave"
+  },
+  {
+    "name": "Esplanade at Mill Creek",
+    "address": "3922 148th St SE"
+  },
+  {
+    "name": "Everett Bone and Joint Clinic",
+    "address": "1100 Pacific Ave"
+  },
+  {
+    "name": "Everett Bone and Joint MRI",
+    "address": "3102 Colby Ave"
+  },
+  {
+    "name": "Freedoc",
+    "address": "19015 36th Ave W"
+  },
+  {
+    "name": "GBH",
+    "address": "611 Main St"
+  },
+  {
+    "name": "GBH - 303 Building",
+    "address": "303 Edmonds St"
+  },
+  {
+    "name": "GBH - 627 Dayton",
+    "address": "627 Dayton St"
+  },
+  {
+    "name": "Hand & Stone - Mill Creek",
+    "address": "1018 164th St SE"
+  },
+  {
+    "name": "Heritage Bank - Allenmore",
+    "address": "1722 S Union Ave"
+  },
+  {
+    "name": "Heritage Bank - Anacortes",
+    "address": "2202 Commercial Ave"
+  },
+  {
+    "name": "Heritage Bank - Auburn",
+    "address": "1001 D St NE"
+  },
+  {
+    "name": "Heritage Bank - BAC",
+    "address": "435 E George Hopper Rd"
+  },
+  {
+    "name": "Heritage Bank - Bellingham - York",
+    "address": "265 York St"
+  },
+  {
+    "name": "Heritage Bank - Burlington",
+    "address": "1800 S Burlington Blvd"
+  },
+  {
+    "name": "Heritage Bank - Camano Island",
+    "address": "165 Mc Elroy Dr"
+  },
+  {
+    "name": "Heritage Bank - Coupeville",
+    "address": "401 N Main St"
+  },
+  {
+    "name": "Heritage Bank - Downtown Yakima",
+    "address": "221 W Yakima Ave"
+  },
+  {
+    "name": "Heritage Bank - Federal Way",
+    "address": "32303 Pacific Hwy S"
+  },
+  {
+    "name": "Heritage Bank - Freeland",
+    "address": "5590 S Harbor Ave"
+  },
+  {
+    "name": "Heritage Bank - Friday Harbor",
+    "address": "535 Market St"
+  },
+  {
+    "name": "Heritage Bank - Gig Harbor",
+    "address": "5119 Olympic Dr"
+  },
+  {
+    "name": "Heritage Bank - Kent",
+    "address": "415 W James St"
+  },
+  {
+    "name": "Heritage Bank - Lacey",
+    "address": "4400 Pacific Ave SE"
+  },
+  {
+    "name": "Heritage Bank - Lakewood",
+    "address": "10318 Gravelly Lake Dr SW"
+  },
+  {
+    "name": "Heritage Bank - Langley",
+    "address": "105 1st St"
+  },
+  {
+    "name": "Heritage Bank - Longview",
+    "address": "927 Commerce Ave"
+  },
+  {
+    "name": "Heritage Bank - Lynnwood",
+    "address": "19510 58th Ave W"
+  },
+  {
+    "name": "Heritage Bank - Marysville",
+    "address": "1031 State Ave"
+  },
+  {
+    "name": "Heritage Bank - Mill Creek",
+    "address": "1504 132nd St SE"
+  },
+  {
+    "name": "Heritage Bank - Mount Vernon",
+    "address": "1700 Urban Ave"
+  },
+  {
+    "name": "Heritage Bank - Mukilteo",
+    "address": "11832 Mukilteo Speedway"
+  },
+  {
+    "name": "Heritage Bank - Northwest Ave",
+    "address": "920 W Bakerview Rd"
+  },
+  {
+    "name": "Heritage Bank - Oak Harbor",
+    "address": "450 SW Bayshore Dr"
+  },
+  {
+    "name": "Heritage Bank - Puyallup Canyon Road",
+    "address": "12803 Canyon Rd E"
+  },
+  {
+    "name": "Heritage Bank - Puyallup East Main",
+    "address": "1307 E Main Ave"
+  },
+  {
+    "name": "Heritage Bank - Puyallup South Hill",
+    "address": "4627 S Meridian"
+  },
+  {
+    "name": "Heritage Bank - Shelton",
+    "address": "301 E Wallace Kneeland Blvd"
+  },
+  {
+    "name": "Heritage Bank - Shoreline",
+    "address": "20333 Ballinger Way NE"
+  },
+  {
+    "name": "Heritage Bank - Smokey Point",
+    "address": "4220 172nd St NE"
+  },
+  {
+    "name": "Heritage Bank - SOC",
+    "address": "3615 Pacific Ave"
+  },
+  {
+    "name": "Heritage Bank - Stanwood",
+    "address": "26317 72nd Ave NW"
+  },
+  {
+    "name": "Heritage Bank - Sumner",
+    "address": "1005 Wood Ave"
+  },
+  {
+    "name": "Heritage Bank - Tacoma Mall Blvd",
+    "address": "5801 Tacoma Mall Blvd"
+  },
+  {
+    "name": "Heritage Bank - Toppenish",
+    "address": "537 W 2nd Ave"
+  },
+  {
+    "name": "Heritage Bank - Tumwater",
+    "address": "850 Trosper Rd SW"
+  },
+  {
+    "name": "Heritage Bank - Union Gap",
+    "address": "2205 S 1st St"
+  },
+  {
+    "name": "Heritage Bank - West Olympia",
+    "address": "900 Cooper Point Rd SW"
+  },
+  {
+    "name": "Hochberg",
+    "address": "222 3rd Ave N"
+  },
+  {
+    "name": "Ironwood Commercial Real Estate LLC",
+    "address": "7918 Green Lake Dr N"
+  },
+  {
+    "name": "Kaufman",
+    "address": "7908 Sweet Iron LN"
+  },
+  {
+    "name": "Kirkland Milestone Kids Dentist & Lund",
+    "address": "13106 120th Ave NE"
+  },
+  {
+    "name": "Lake Stevens Milestone Kids Dentist & Lund",
+    "address": "22 95th Dr NE"
+  },
+  {
+    "name": "Landing",
+    "address": "300 Admiral Way"
+  },
+  {
+    "name": "Lynnwood Crossroads, LLC c/o Wallace Properties",
+    "address": "19620 Hwy 99"
+  },
+  {
+    "name": "Lynnwood Tower LLC, c/o JSH Properties",
+    "address": "19715 Hwy 99"
+  },
+  {
+    "name": "North Seattle Dental",
+    "address": "11011 Meridian Ave N"
+  },
+  {
+    "name": "Northwest Foot and Ankle",
+    "address": "10821 19th Ave SE"
+  },
+  {
+    "name": "Oberto 54th St Warehouse",
+    "address": "22513 54th Ave S"
+  },
+  {
+    "name": "Oberto Main Building",
+    "address": "7060 Oberto Dr"
+  },
+  {
+    "name": "Pemco",
+    "address": "1300 Dexter Ave N"
+  },
+  {
+    "name": "Port of Edmonds",
+    "address": "336 Admiral Way"
+  },
+  {
+    "name": "Port of Edmonds Harbor Square",
+    "address": "120 W Dayton St"
+  },
+  {
+    "name": "Proliance Surgeons/Concept Therapy (at Port of Edmonds)",
+    "address": "190 W Dayton St"
+  },
+  {
+    "name": "Providence Everett (Colby Campus)",
+    "address": "1321 Colby Ave"
+  },
+  {
+    "name": "Providence Everett (Pacific Campus)",
+    "address": "916 Pacific Ave"
+  },
+  {
+    "name": "Public Hospital District #2, (Kruger) Snohomsih County, dba Verdant Health Commission (Kruger Clinic)",
+    "address": "21600 WA-99"
+  },
+  {
+    "name": "Public Hospital District #2, (Verdant) Snohomish County, dba Verdant Health Commission",
+    "address": "4710 196th St SW"
+  },
+  {
+    "name": "RBC",
+    "address": "303 5th Ave S"
+  },
+  {
+    "name": "Seattle-Tacoma Box",
+    "address": "23400 71st Pl S"
+  },
+  {
+    "name": "Seaview GMC",
+    "address": "17909 Hwy 99"
+  },
+  {
+    "name": "SF Professional Plaza, LLC c/o Wallace Properties",
+    "address": "6226 196th St SW"
+  },
+  {
+    "name": "Shinn Mechanical",
+    "address": "18802 80th Ave S"
+  },
+  {
+    "name": "Shoreline Marketplace (Havenhurst Holdings LLC)",
+    "address": "1201 N 175th St"
+  },
+  {
+    "name": "Snohomish 911 (New Campus)",
+    "address": "332 SW Everett Mall Way"
+  },
+  {
+    "name": "Snohomish County 911 (Main Campus)",
+    "address": "1121 SE Everett Mall Way"
+  },
+  {
+    "name": "Snohomish County 911 (North Campus )",
+    "address": "14900 40th Ave NE"
+  },
+  {
+    "name": "Snohomish Milestone Kids Dentist and Lund",
+    "address": "615 Ave D"
+  },
+  {
+    "name": "Social Security Office",
+    "address": "3809 Broadway"
+  },
+  {
+    "name": "Stilly Valley Health Connections PHD #3",
+    "address": "3405 173rd Pl NE"
+  },
+  {
+    "name": "United Way - YMCA",
+    "address": "3120 McDougall Ave"
+  },
+  {
+    "name": "Villa Marina",
+    "address": "17410 NE 45th St"
+  }
+]

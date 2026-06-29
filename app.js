@@ -60,12 +60,53 @@ function renderSecondary() {
   });
 }
 
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+async function renderSites(viewEl) {
+  viewEl.innerHTML = `
+    <h1 class="page-title">Sites</h1>
+    <p class="page-sub">Sites › Site info</p>
+    <div id="sites-status" class="muted">Loading locations…</div>
+    <div id="sites-list" class="site-list"></div>`;
+
+  const statusEl = viewEl.querySelector("#sites-status");
+  const listEl = viewEl.querySelector("#sites-list");
+
+  try {
+    const res = await fetch("/api/locations");
+    if (!res.ok) throw new Error(`API returned ${res.status}`);
+    const data = await res.json();
+    const locations = data.locations || [];
+    statusEl.textContent = `${locations.length} locations`;
+    listEl.innerHTML = locations
+      .map(
+        (l) => `
+        <div class="site-row">
+          <div class="site-name">${escapeHtml(l.name)}</div>
+          <div class="site-addr">${escapeHtml(l.address)}</div>
+        </div>`
+      )
+      .join("");
+  } catch (err) {
+    statusEl.innerHTML = `<span class="error">Couldn't load locations (${escapeHtml(err.message)}). The API may still be deploying.</span>`;
+  }
+}
+
 function renderView() {
   const tab = NAV.find((t) => t.id === state.tab);
   const sub = tab.subtabs[state.sub];
+  const view = document.getElementById("view");
+
+  if (state.tab === "sites" && state.sub === 0) {
+    renderSites(view);
+    return;
+  }
+
   const title = tab.label;
   const where = sub ? `${tab.label} › ${sub}` : tab.label;
-  document.getElementById("view").innerHTML = `
+  view.innerHTML = `
     <h1 class="page-title">${title}</h1>
     <p class="page-sub">${where}</p>
     <div class="placeholder">

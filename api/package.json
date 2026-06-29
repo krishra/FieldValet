@@ -1,0 +1,12 @@
+{
+  "name": "fieldvalet-api",
+  "version": "1.0.0",
+  "description": "FieldValet managed API",
+  "main": "GetLocations/index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@azure/data-tables": "^13.2.2"
+  }
+}
