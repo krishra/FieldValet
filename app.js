@@ -373,14 +373,25 @@ async function initGeofenceMap() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const cfg = await res.json();
     mapsKey = cfg.azureMapsKey;
+    if (!mapsKey) throw new Error("AZURE_MAPS_KEY is not configured in Azure app settings.");
   } catch (err) {
-    container.innerHTML = `<p style="padding:16px;color:var(--muted);font-size:13px">Map unavailable: ${err.message}</p>`;
+    container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;padding:24px;text-align:center;color:var(--muted);font-size:13px">Map unavailable: ${escHtml(err.message)}</div>`;
     return;
   }
 
+  // Try to centre on the user's current location; fall back to Seattle area
+  const startPosition = await new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve([-122.2, 47.8]);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve([pos.coords.longitude, pos.coords.latitude]),
+      () => resolve([-122.2, 47.8]),
+      { timeout: 5000 }
+    );
+  });
+
   const map = new atlas.Map("geofence-map", {
-    center: [-122.2, 47.8],
-    zoom: 11,
+    center: startPosition,
+    zoom: 15,
     language: "en-US",
     authOptions: {
       authType: "subscriptionKey",
@@ -389,6 +400,8 @@ async function initGeofenceMap() {
   });
 
   map.events.add("ready", () => {
+    // Force a resize so tiles fill the container correctly
+    map.resize();
     const drawingManager = new atlas.drawing.DrawingManager(map, {
       toolbar: new atlas.control.DrawingToolbar({
         buttons: ["draw-polygon", "draw-circle", "erase-geometry"],
