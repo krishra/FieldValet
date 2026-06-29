@@ -36,8 +36,11 @@
       </div>
       <div class="login-field">
         <label class="login-label" for="login-password">Password</label>
-        <input id="login-password" class="login-input" type="password" autocomplete="current-password"
-               placeholder="••••••••" required />
+        <div class="pw-wrap">
+          <input id="login-password" class="login-input" type="password" autocomplete="current-password"
+                 placeholder="••••••••" required />
+          <button type="button" class="pw-toggle" id="pw-toggle" aria-label="Show password"></button>
+        </div>
       </div>
       <div id="login-error" class="login-error" hidden></div>
       <button type="submit" class="btn-primary login-submit" id="login-submit">Sign in</button>

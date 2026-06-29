@@ -67,6 +67,9 @@ function renderProfilePill() {
   document.getElementById("logout-btn").onclick = handleLogout;
 }
 
+const EYE_OPEN = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const EYE_OFF  = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+
 function showLogin() {
   document.body.classList.add("pre-auth");
   const screen = document.getElementById("login-screen");
@@ -75,6 +78,23 @@ function showLogin() {
   if (!form.dataset.wired) {
     form.dataset.wired = "1";
     form.addEventListener("submit", handleLogin);
+
+    const pwInput  = document.getElementById("login-password");
+    const pwToggle = document.getElementById("pw-toggle");
+    pwToggle.innerHTML = EYE_OPEN;
+    pwToggle.addEventListener("click", () => {
+      const showing = pwInput.type === "text";
+      pwInput.type = showing ? "password" : "text";
+      pwToggle.innerHTML = showing ? EYE_OPEN : EYE_OFF;
+      pwToggle.setAttribute("aria-label", showing ? "Show password" : "Hide password");
+    });
+  }
+  // Always re-mask the password field when the login screen is shown.
+  const pwInput = document.getElementById("login-password");
+  if (pwInput.type === "text") {
+    pwInput.type = "password";
+    document.getElementById("pw-toggle").innerHTML = EYE_OPEN;
+    document.getElementById("pw-toggle").setAttribute("aria-label", "Show password");
   }
   document.getElementById("login-email").focus();
 }
@@ -108,6 +128,8 @@ async function handleLogin(e) {
       body: JSON.stringify({ email, password }),
     });
     const data = await res.json().catch(() => ({}));
+    if (res.status === 401) throw new Error("Invalid username or password.");
+    if (res.status >= 500) throw new Error("System is not available. Please try again later.");
     if (!res.ok) throw new Error(data.error || `Sign-in failed (HTTP ${res.status}).`);
 
     currentUser = data;
@@ -117,7 +139,9 @@ async function handleLogin(e) {
     parseHash();
     render();
   } catch (err) {
-    errEl.textContent = err.message;
+    errEl.textContent = err.name === "TypeError"
+      ? "System is not available. Please try again later."
+      : err.message;
     errEl.hidden = false;
   } finally {
     btn.disabled = false;
