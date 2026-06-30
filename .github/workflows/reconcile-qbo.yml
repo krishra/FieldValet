@@ -1,0 +1,19 @@
+name: Nightly QBO Reconciliation
+
+on:
+  schedule:
+    # 3am UTC daily — Azure Static Web Apps has no native timer-trigger
+    # support for managed Functions, so this drives the HTTP-triggered
+    # ReconcileQBO endpoint on a schedule instead.
+    - cron: "0 3 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call ReconcileQBO
+        run: |
+          curl -sS -X POST "${{ secrets.FIELDVALET_BASE_URL }}/api/qbo/reconcile" \
+            -H "x-reconcile-secret: ${{ secrets.RECONCILE_SECRET }}" \
+            --fail-with-body
