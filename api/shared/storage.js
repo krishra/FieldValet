@@ -4,6 +4,8 @@ const { TableClient } = require("@azure/data-tables");
 const TENANTS_TABLE = "tenants";
 const USERS_TABLE = "users";
 const LOCATIONS_TABLE = "locations";
+const QBO_CONNECTIONS_TABLE = "qboConnections";
+const WORK_ORDERS_TABLE = "workOrders";
 
 // Partition used by the users table — login looks users up by a globally-unique
 // email key, so all users share one partition and tenant is stored as a field.
@@ -20,6 +22,8 @@ module.exports = {
   TENANTS_TABLE,
   USERS_TABLE,
   LOCATIONS_TABLE,
+  QBO_CONNECTIONS_TABLE,
+  WORK_ORDERS_TABLE,
   USERS_PARTITION,
   TENANTS_PARTITION,
   tableClient,
