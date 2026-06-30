@@ -28,7 +28,7 @@ module.exports = async function (context, req) {
 
     context.res = {
       status: 302,
-      headers: { Location: "/#/sales/bids" },
+      headers: { Location: "/#/sales" },
     };
   } catch (err) {
     context.log.error("QBOCallback failed", err);

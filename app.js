@@ -3,7 +3,7 @@
 
 const NAV = [
   { id: "dashboard", label: "Dashboard", subtabs: [] },
-  { id: "sales", label: "Sales", subtabs: ["Leads", "Bids", "Proposals", "Pipeline"] },
+  { id: "sales", label: "Sales", subtabs: [] },
   { id: "sites", label: "Sites", subtabs: ["Site info", "Security wall", "Work orders"] },
   { id: "chats", label: "Chats", subtabs: [] },
   { id: "scheduling", label: "Scheduling", subtabs: ["Calendar", "Time clock", "Coverage"] },
@@ -226,7 +226,7 @@ function renderView() {
     return;
   }
 
-  if (tab.id === "sales" && sub === "Bids") {
+  if (tab.id === "sales") {
     renderBidCalculator();
     return;
   }
@@ -331,7 +331,7 @@ function renderBidCalculator() {
   const view = document.getElementById("view");
   view.innerHTML = `
     <h1 class="page-title">Sales</h1>
-    <p class="page-sub">Sales › Bids</p>
+    <p class="page-sub">Bid Calculator</p>
     <div class="placeholder" style="margin-bottom:16px">
       <strong>Placeholder pricing</strong>
       Using a rule-based stand-in until the real bid calculator is available. Numbers are directional only.
