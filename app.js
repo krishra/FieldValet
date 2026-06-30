@@ -226,6 +226,16 @@ function renderView() {
     return;
   }
 
+  if (tab.id === "sales" && sub === "Bids") {
+    renderBidCalculator();
+    return;
+  }
+
+  if (tab.id === "sites" && sub === "Work orders") {
+    renderWorkOrdersList();
+    return;
+  }
+
   document.getElementById("view").innerHTML = `
     <h1 class="page-title">${title}</h1>
     <p class="page-sub">${where}</p>
@@ -307,6 +317,398 @@ async function renderSitesList() {
   });
 
   document.getElementById("new-site-btn").addEventListener("click", () => openNewSiteDrawer());
+}
+
+// ---- Bid calculator (placeholder pricing, pending the real Excel-based one) ----
+const BID_SERVICE_TYPES = [
+  { key: "dailyJanitorial", label: "Daily Janitorial" },
+  { key: "floorCare", label: "Floor Care" },
+  { key: "windowCleaning", label: "Window Cleaning" },
+  { key: "restroomService", label: "Restroom Service" },
+];
+
+function renderBidCalculator() {
+  const view = document.getElementById("view");
+  view.innerHTML = `
+    <h1 class="page-title">Sales</h1>
+    <p class="page-sub">Sales › Bids</p>
+    <div class="placeholder" style="margin-bottom:16px">
+      <strong>Placeholder pricing</strong>
+      Using a rule-based stand-in until the real bid calculator is available. Numbers are directional only.
+    </div>
+    <form id="bid-calc-form" novalidate>
+      <fieldset class="form-section">
+        <legend>Job details</legend>
+        <div class="form-row">
+          <label class="form-label required" for="bc-sqft">Square Footage</label>
+          <input class="form-input" id="bc-sqft" type="number" min="1" placeholder="e.g. 12000" required />
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="bc-frequency">Frequency</label>
+          <select class="form-input" id="bc-frequency">
+            <option value="monthly">Monthly</option>
+            <option value="biweekly">Biweekly</option>
+            <option value="weekly">Weekly</option>
+            <option value="daily">Daily</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label required">Service Types</label>
+          ${BID_SERVICE_TYPES.map(
+            (s) => `
+            <label class="be-check-label" style="display:block;margin:4px 0">
+              <input type="checkbox" class="form-checkbox bc-service" value="${s.key}" /> ${s.label}
+            </label>`
+          ).join("")}
+        </div>
+        <div id="bc-error" class="form-error" hidden></div>
+        <button type="submit" class="btn-primary" id="bc-submit">Calculate Bid</button>
+      </fieldset>
+    </form>
+    <div id="bc-results"></div>`;
+
+  document.getElementById("bid-calc-form").addEventListener("submit", handleCalculateBid);
+}
+
+async function handleCalculateBid(e) {
+  e.preventDefault();
+  const errEl = document.getElementById("bc-error");
+  const resultsEl = document.getElementById("bc-results");
+  errEl.hidden = true;
+  resultsEl.innerHTML = "";
+
+  const squareFootage = Number(document.getElementById("bc-sqft").value);
+  const frequency = document.getElementById("bc-frequency").value;
+  const serviceTypes = [...document.querySelectorAll(".bc-service:checked")].map((el) => el.value);
+
+  if (!squareFootage || squareFootage <= 0) {
+    errEl.textContent = "Enter a square footage greater than 0.";
+    errEl.hidden = false;
+    return;
+  }
+  if (serviceTypes.length === 0) {
+    errEl.textContent = "Select at least one service type.";
+    errEl.hidden = false;
+    return;
+  }
+
+  const btn = document.getElementById("bc-submit");
+  btn.disabled = true;
+  btn.textContent = "Calculating…";
+
+  try {
+    const res = await apiFetch("/api/bids/calculate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ squareFootage, frequency, serviceTypes }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+    resultsEl.innerHTML = `
+      <table class="sites-table">
+        <thead><tr><th>Service</th><th>Qty/mo</th><th>Rate</th><th>Amount</th></tr></thead>
+        <tbody>
+          ${data.lineItems
+            .map(
+              (li) => `<tr>
+                <td>${escHtml(li.description)}</td>
+                <td>${li.qty}</td>
+                <td>$${li.rate.toFixed(3)}/sq ft</td>
+                <td>$${li.amount.toFixed(2)}</td>
+              </tr>`
+            )
+            .join("")}
+        </tbody>
+        <tfoot><tr><td colspan="3" style="text-align:right"><strong>Total</strong></td><td><strong>$${data.total.toFixed(
+          2
+        )}</strong></td></tr></tfoot>
+      </table>`;
+  } catch (err) {
+    errEl.textContent = `Calculation failed: ${err.message}`;
+    errEl.hidden = false;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Calculate Bid";
+  }
+}
+
+// ---- Work orders ----
+let _workOrdersCache = null;
+
+async function renderWorkOrdersList() {
+  const view = document.getElementById("view");
+  view.innerHTML = `
+    <h1 class="page-title">Sites</h1>
+    <p class="page-sub">Sites › Work orders</p>
+    <div class="wo-loading">Loading work orders…</div>`;
+
+  try {
+    const res = await apiFetch("/api/workorders");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    _workOrdersCache = data.workOrders || [];
+  } catch (err) {
+    view.innerHTML = `
+      <h1 class="page-title">Sites</h1>
+      <p class="page-sub">Sites › Work orders</p>
+      <div class="placeholder"><strong>Could not load work orders</strong>${err.message}</div>`;
+    return;
+  }
+
+  view.innerHTML = `
+    <h1 class="page-title">Sites</h1>
+    <p class="page-sub">Sites › Work orders</p>
+    <div class="sites-toolbar">
+      <span id="wo-count" class="sites-count">${_workOrdersCache.length} work order${_workOrdersCache.length !== 1 ? "s" : ""}</span>
+      <button class="btn-primary" id="new-wo-btn">+ New Work Order</button>
+    </div>
+    <table class="sites-table">
+      <thead><tr><th>Customer</th><th>Location</th><th>Total</th><th>Status</th><th>QBO Estimate</th><th>QBO Invoice</th><th></th></tr></thead>
+      <tbody id="wo-tbody"></tbody>
+    </table>`;
+
+  paintWorkOrderRows();
+  document.getElementById("new-wo-btn").addEventListener("click", () => openNewWorkOrderDrawer());
+}
+
+const WO_STATUS_LABELS = {
+  draft: "Draft",
+  submitted: "Submitted",
+  approved: "Approved",
+  invoiced: "Invoiced",
+  paid: "Paid",
+};
+
+function paintWorkOrderRows() {
+  const tbody = document.getElementById("wo-tbody");
+  if (!tbody) return;
+  if (_workOrdersCache.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="sites-empty">No work orders yet.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = _workOrdersCache
+    .map((wo) => {
+      let action = "";
+      if (wo.status === "draft") {
+        action = `<button class="btn-secondary btn-sm wo-submit-btn" data-id="${escHtml(wo.workOrderId)}">Submit to QuickBooks</button>`;
+      } else if (wo.status === "submitted" || wo.status === "approved") {
+        action = `<button class="btn-secondary btn-sm wo-invoice-btn" data-id="${escHtml(wo.workOrderId)}">Create Invoice</button>`;
+      }
+      return `<tr>
+        <td>${escHtml(wo.customerName)}</td>
+        <td>${escHtml(wo.locationName || "")}</td>
+        <td>$${Number(wo.total).toFixed(2)}</td>
+        <td>${WO_STATUS_LABELS[wo.status] || wo.status}</td>
+        <td>${wo.qboEstimateId ? escHtml(wo.qboEstimateId) : "—"}</td>
+        <td>${wo.qboInvoiceId ? escHtml(wo.qboInvoiceId) : "—"}</td>
+        <td>${action}</td>
+      </tr>`;
+    })
+    .join("");
+
+  tbody.querySelectorAll(".wo-submit-btn").forEach((btn) => {
+    btn.addEventListener("click", () => handleSubmitWorkOrder(btn.dataset.id, btn));
+  });
+  tbody.querySelectorAll(".wo-invoice-btn").forEach((btn) => {
+    btn.addEventListener("click", () => handleCreateInvoice(btn.dataset.id, btn));
+  });
+}
+
+async function handleSubmitWorkOrder(workOrderId, btn) {
+  btn.disabled = true;
+  btn.textContent = "Submitting…";
+  try {
+    const res = await apiFetch(`/api/workorders/${encodeURIComponent(workOrderId)}/submit`, { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+    const wo = _workOrdersCache.find((w) => w.workOrderId === workOrderId);
+    if (wo) {
+      wo.status = "submitted";
+      wo.qboCustomerId = data.qboCustomerId;
+      wo.qboEstimateId = data.qboEstimateId;
+    }
+    paintWorkOrderRows();
+  } catch (err) {
+    alert(`Submit failed: ${err.message}`);
+    btn.disabled = false;
+    btn.textContent = "Submit to QuickBooks";
+  }
+}
+
+async function handleCreateInvoice(workOrderId, btn) {
+  btn.disabled = true;
+  btn.textContent = "Creating…";
+  try {
+    const res = await apiFetch(`/api/workorders/${encodeURIComponent(workOrderId)}/invoice`, { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+    const wo = _workOrdersCache.find((w) => w.workOrderId === workOrderId);
+    if (wo) {
+      wo.status = "invoiced";
+      wo.qboInvoiceId = data.qboInvoiceId;
+    }
+    paintWorkOrderRows();
+  } catch (err) {
+    alert(`Create Invoice failed: ${err.message}`);
+    btn.disabled = false;
+    btn.textContent = "Create Invoice";
+  }
+}
+
+async function openNewWorkOrderDrawer() {
+  if (document.getElementById("wo-drawer")) return;
+
+  if (!_sitesCache) {
+    try {
+      const res = await apiFetch("/api/locations");
+      if (res.ok) _sitesCache = (await res.json()).locations || [];
+    } catch (e) {
+      _sitesCache = _sitesCache || [];
+    }
+  }
+
+  const overlay = document.createElement("div");
+  overlay.id = "wo-drawer-overlay";
+  overlay.className = "drawer-overlay";
+  overlay.addEventListener("click", closeWorkOrderDrawer);
+
+  const drawer = document.createElement("div");
+  drawer.id = "wo-drawer";
+  drawer.className = "drawer";
+  const locationOptions = (_sitesCache || []).map((s) => `<option>${escHtml(s.name)}</option>`).join("");
+  drawer.innerHTML = `
+    <div class="drawer-header">
+      <h2 class="drawer-title">New Work Order</h2>
+      <button class="drawer-close" id="wo-drawer-close-btn" aria-label="Close">✕</button>
+    </div>
+    <div class="drawer-body">
+      <form id="new-wo-form" novalidate>
+        <fieldset class="form-section">
+          <legend>Customer</legend>
+          <div class="form-row">
+            <label class="form-label required" for="wo-customer-name">Customer Name</label>
+            <input class="form-input" id="wo-customer-name" type="text" required />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="wo-customer-email">Customer Email</label>
+            <input class="form-input" id="wo-customer-email" type="email" placeholder="for the QBO estimate" />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="wo-location">Location</label>
+            <select class="form-input" id="wo-location">
+              <option value="">— Select —</option>
+              ${locationOptions}
+            </select>
+          </div>
+        </fieldset>
+        <fieldset class="form-section">
+          <legend>Job details</legend>
+          <div class="form-row">
+            <label class="form-label required" for="wo-sqft">Square Footage</label>
+            <input class="form-input" id="wo-sqft" type="number" min="1" required />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="wo-frequency">Frequency</label>
+            <select class="form-input" id="wo-frequency">
+              <option value="monthly">Monthly</option>
+              <option value="biweekly">Biweekly</option>
+              <option value="weekly">Weekly</option>
+              <option value="daily">Daily</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label required">Service Types</label>
+            ${BID_SERVICE_TYPES.map(
+              (s) => `
+              <label class="be-check-label" style="display:block;margin:4px 0">
+                <input type="checkbox" class="form-checkbox wo-service" value="${s.key}" /> ${s.label}
+              </label>`
+            ).join("")}
+          </div>
+        </fieldset>
+        <div id="wo-form-error" class="form-error" hidden></div>
+      </form>
+    </div>
+    <div class="drawer-footer">
+      <button type="button" class="btn-ghost" id="wo-cancel-btn">Cancel</button>
+      <button type="button" class="btn-primary" id="wo-save-btn">Save Draft</button>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(drawer);
+  requestAnimationFrame(() => {
+    overlay.classList.add("open");
+    drawer.classList.add("open");
+  });
+
+  document.getElementById("wo-drawer-close-btn").addEventListener("click", closeWorkOrderDrawer);
+  document.getElementById("wo-cancel-btn").addEventListener("click", closeWorkOrderDrawer);
+  document.getElementById("wo-save-btn").addEventListener("click", handleSaveWorkOrder);
+}
+
+function closeWorkOrderDrawer() {
+  const overlay = document.getElementById("wo-drawer-overlay");
+  const drawer = document.getElementById("wo-drawer");
+  if (!drawer) return;
+  overlay.classList.remove("open");
+  drawer.classList.remove("open");
+  setTimeout(() => {
+    overlay && overlay.remove();
+    drawer && drawer.remove();
+  }, 280);
+}
+
+async function handleSaveWorkOrder() {
+  const errEl = document.getElementById("wo-form-error");
+  errEl.hidden = true;
+
+  const customerName = document.getElementById("wo-customer-name").value.trim();
+  const customerEmail = document.getElementById("wo-customer-email").value.trim();
+  const locationName = document.getElementById("wo-location").value;
+  const squareFootage = Number(document.getElementById("wo-sqft").value);
+  const frequency = document.getElementById("wo-frequency").value;
+  const serviceTypes = [...document.querySelectorAll(".wo-service:checked")].map((el) => el.value);
+
+  if (!customerName) {
+    errEl.textContent = "Customer Name is required.";
+    errEl.hidden = false;
+    return;
+  }
+  if (!squareFootage || squareFootage <= 0) {
+    errEl.textContent = "Enter a square footage greater than 0.";
+    errEl.hidden = false;
+    return;
+  }
+  if (serviceTypes.length === 0) {
+    errEl.textContent = "Select at least one service type.";
+    errEl.hidden = false;
+    return;
+  }
+
+  const saveBtn = document.getElementById("wo-save-btn");
+  saveBtn.disabled = true;
+  saveBtn.textContent = "Saving…";
+
+  try {
+    const res = await apiFetch("/api/workorders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customerName, customerEmail, locationName, squareFootage, frequency, serviceTypes }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+    closeWorkOrderDrawer();
+    renderWorkOrdersList();
+  } catch (err) {
+    errEl.textContent = `Save failed: ${err.message}`;
+    errEl.hidden = false;
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Save Draft";
+  }
 }
 
 // ---- New Site drawer ----

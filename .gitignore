@@ -3,3 +3,4 @@ node_modules/
 *.log
 .env
 api/local.settings.json
+api/azurite-data/
