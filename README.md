@@ -42,6 +42,7 @@ never commit real secrets):
 | `QBO_ENV` | `sandbox` (default) or `production` |
 | `QBO_INCOME_ACCOUNT_ID` | A QBO Account ID (Income type) that newly-created Items post to — grab one from `/api/qbo/accounts`, required for Phase 2 (work order submission) |
 | `QBO_WEBHOOK_VERIFIER_TOKEN` | From the Intuit dashboard's Webhooks tab, after registering the deployed `/api/qbo/webhook` URL — required for Phase 3 (webhook signature verification) |
+| `RECONCILE_SECRET` | Shared secret for `/api/qbo/reconcile` — pick any random string, set the same value as the `RECONCILE_SECRET` **GitHub Actions repo secret** used by the nightly cron workflow |
 
 **Endpoints:**
 - `GET /api/qbo/connect` — starts the OAuth flow against Intuit (auth-gated; redirects to Intuit's consent screen).
@@ -53,7 +54,7 @@ never commit real secrets):
 - `POST /api/workorders/{id}/submit` — finds-or-creates the QBO Customer and Items, then creates a QBO Estimate from the work order's line items.
 - `POST /api/workorders/{id}/invoice` — creates a QBO Invoice linked to the work order's Estimate (status must be `submitted` or `approved`).
 - `POST /api/qbo/webhook` — anonymous; Intuit calls this when subscribed entities (Estimate, Invoice, Payment) change. Verifies the `intuit-signature` header, then advances work order status (`approved` on Estimate acceptance, `paid` on linked Payment).
-- `ReconcileQBO` — timer-triggered (nightly, 3am), not HTTP. Polls QBO's CDC endpoint for anything the webhook missed and runs it through the same status-update logic.
+- `POST /api/qbo/reconcile` — requires `x-reconcile-secret` header matching `RECONCILE_SECRET`. Polls QBO's CDC endpoint for anything the webhook missed and runs it through the same status-update logic. Driven nightly by a GitHub Actions cron workflow (`.github/workflows/reconcile-qbo.yml`), **not** a Functions timer trigger — Azure Static Web Apps' managed Functions API only supports HTTP triggers, so a native timer trigger fails to deploy there.
 
 **Work order status flow:** `draft` → `submitted` (Estimate created) → `approved`
 (QBO Estimate accepted, detected via webhook or nightly reconciliation) →
@@ -71,6 +72,13 @@ can't deliver webhooks to `localhost`. After deploying (see below), register
 the live `/api/qbo/webhook` URL in the Intuit dashboard's Webhooks tab,
 subscribe to Estimate/Invoice/Payment, and copy the Verifier Token it gives
 you into `QBO_WEBHOOK_VERIFIER_TOKEN` in the Azure Portal's Configuration.
+
+**Nightly reconciliation setup:** add two repo secrets under GitHub → Settings
+→ Secrets and variables → Actions: `FIELDVALET_BASE_URL` (the live site URL,
+no trailing slash) and `RECONCILE_SECRET` (matching the Azure app setting of
+the same name). The `reconcile-qbo.yml` workflow calls `/api/qbo/reconcile`
+nightly at 3am UTC; it can also be triggered manually from the Actions tab
+(`workflow_dispatch`) to test without waiting.
 
 ## Deploy — Azure Static Web Apps
 
