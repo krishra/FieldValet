@@ -15,11 +15,38 @@ const state = { tab: "dashboard", sub: 0 };
 // ---- Auth ----
 let currentUser = null;
 
-// Fetch wrapper that always sends the session cookie and bounces to the login
-// screen if the session is missing/expired.
+// Single in-flight refresh promise — concurrent 401s share one refresh attempt
+// instead of hammering the endpoint.
+let _refreshPromise = null;
+
+async function attemptRefresh() {
+  if (_refreshPromise) return _refreshPromise;
+  _refreshPromise = (async () => {
+    try {
+      const res = await fetch("/api/auth/refresh", { method: "POST", credentials: "same-origin" });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) {
+      return null;
+    } finally {
+      _refreshPromise = null;
+    }
+  })();
+  return _refreshPromise;
+}
+
+// Fetch wrapper: on 401 try a silent token refresh before showing the login
+// screen, so the 8-hour access token expiry is transparent while a valid
+// 30-day refresh token exists.
 async function apiFetch(url, opts) {
   const res = await fetch(url, Object.assign({ credentials: "same-origin" }, opts || {}));
   if (res.status === 401) {
+    const refreshed = await attemptRefresh();
+    if (refreshed) {
+      currentUser = refreshed;
+      const retry = await fetch(url, Object.assign({ credentials: "same-origin" }, opts || {}));
+      if (retry.status !== 401) return retry;
+    }
     forceLogout();
     throw new Error("Your session has expired. Please sign in again.");
   }
@@ -70,26 +97,79 @@ function renderProfilePill() {
 const EYE_OPEN = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
 const EYE_OFF  = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
 
+// ---- Auth screen panel management ----
+// All four panels share the #login-screen container.  Only one is visible
+// at a time.  Wiring is done lazily on first showLogin() call.
+
+const AUTH_PANELS = ["login-form", "forgot-panel", "forgot-sent-panel", "reset-panel"];
+let _authWired = false;
+let _resetToken = null; // set by boot() when /reset-password?token= is in URL
+
+function showAuthPanel(id) {
+  AUTH_PANELS.forEach((p) => {
+    const el = document.getElementById(p);
+    if (el) el.hidden = p !== id;
+  });
+}
+
+function wireAuthScreens() {
+  // Sign-in form
+  document.getElementById("login-form").addEventListener("submit", handleLogin);
+  const pwInput = document.getElementById("login-password");
+  const pwToggle = document.getElementById("pw-toggle");
+  pwToggle.innerHTML = EYE_OPEN;
+  pwToggle.addEventListener("click", () => {
+    const show = pwInput.type === "text";
+    pwInput.type = show ? "password" : "text";
+    pwToggle.innerHTML = show ? EYE_OPEN : EYE_OFF;
+    pwToggle.setAttribute("aria-label", show ? "Show password" : "Hide password");
+  });
+
+  // Forgot password link
+  document.getElementById("forgot-link").addEventListener("click", () => {
+    document.getElementById("forgot-error").hidden = true;
+    // Pre-fill with whatever the user typed into the sign-in email field.
+    document.getElementById("forgot-email").value = document.getElementById("login-email").value;
+    showAuthPanel("forgot-panel");
+    document.getElementById("forgot-email").focus();
+  });
+  document.getElementById("forgot-back").addEventListener("click", () => {
+    showAuthPanel("login-form");
+    document.getElementById("login-email").focus();
+  });
+  document.getElementById("forgot-submit").addEventListener("click", handleForgotPassword);
+
+  document.getElementById("forgot-sent-back").addEventListener("click", () => {
+    showAuthPanel("login-form");
+    document.getElementById("login-email").focus();
+  });
+
+  // Reset-password panel (password-toggle + submit)
+  const resetPwInput = document.getElementById("reset-password-input");
+  const resetPwToggle = document.getElementById("reset-pw-toggle");
+  resetPwToggle.innerHTML = EYE_OPEN;
+  resetPwToggle.addEventListener("click", () => {
+    const show = resetPwInput.type === "text";
+    resetPwInput.type = show ? "password" : "text";
+    resetPwToggle.innerHTML = show ? EYE_OPEN : EYE_OFF;
+    resetPwToggle.setAttribute("aria-label", show ? "Show password" : "Hide password");
+  });
+  document.getElementById("reset-submit").addEventListener("click", () => {
+    if (_resetToken) handleResetPassword(_resetToken);
+  });
+}
+
 function showLogin() {
   document.body.classList.add("pre-auth");
-  const screen = document.getElementById("login-screen");
-  screen.hidden = false;
-  const form = document.getElementById("login-form");
-  if (!form.dataset.wired) {
-    form.dataset.wired = "1";
-    form.addEventListener("submit", handleLogin);
+  document.getElementById("login-screen").hidden = false;
+  showAuthPanel("login-form");
 
-    const pwInput  = document.getElementById("login-password");
-    const pwToggle = document.getElementById("pw-toggle");
-    pwToggle.innerHTML = EYE_OPEN;
-    pwToggle.addEventListener("click", () => {
-      const showing = pwInput.type === "text";
-      pwInput.type = showing ? "password" : "text";
-      pwToggle.innerHTML = showing ? EYE_OPEN : EYE_OFF;
-      pwToggle.setAttribute("aria-label", showing ? "Show password" : "Hide password");
-    });
+  if (!_authWired) {
+    _authWired = true;
+    wireAuthScreens();
   }
-  // Always re-mask the password field when the login screen is shown.
+
+  // Re-mask the password field every time the screen is shown.
   const pwInput = document.getElementById("login-password");
   if (pwInput.type === "text") {
     pwInput.type = "password";
@@ -97,6 +177,95 @@ function showLogin() {
     document.getElementById("pw-toggle").setAttribute("aria-label", "Show password");
   }
   document.getElementById("login-email").focus();
+}
+
+// ---- Forgot password ----
+async function handleForgotPassword() {
+  const email = document.getElementById("forgot-email").value.trim();
+  const errEl = document.getElementById("forgot-error");
+  const btn = document.getElementById("forgot-submit");
+  errEl.hidden = true;
+
+  if (!email) {
+    errEl.textContent = "Please enter your email address.";
+    errEl.hidden = false;
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Sending…";
+  try {
+    const res = await fetch("/api/auth/forgot-password", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      errEl.textContent = data.error || "Something went wrong. Please try again.";
+      errEl.hidden = false;
+      return;
+    }
+    showAuthPanel("forgot-sent-panel");
+  } catch (err) {
+    errEl.textContent = "Network error. Please check your connection and try again.";
+    errEl.hidden = false;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Send reset link";
+  }
+}
+
+// ---- Reset password ----
+async function handleResetPassword(token) {
+  const newPassword = document.getElementById("reset-password-input").value;
+  const confirm = document.getElementById("reset-confirm-input").value;
+  const errEl = document.getElementById("reset-error");
+  const btn = document.getElementById("reset-submit");
+  errEl.hidden = true;
+
+  if (newPassword.length < 8) {
+    errEl.textContent = "Password must be at least 8 characters.";
+    errEl.hidden = false;
+    return;
+  }
+  if (newPassword !== confirm) {
+    errEl.textContent = "Passwords do not match.";
+    errEl.hidden = false;
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Setting password…";
+  try {
+    const res = await fetch("/api/auth/reset-password", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, newPassword }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      errEl.textContent = data.error || "Something went wrong. Please try again.";
+      errEl.hidden = false;
+      btn.disabled = false;
+      btn.textContent = "Set new password";
+      return;
+    }
+    // Auto-login: clean up the URL and enter the app.
+    currentUser = data;
+    history.replaceState({}, "", "/");
+    showApp();
+    renderProfilePill();
+    parseHash();
+    render();
+  } catch (err) {
+    errEl.textContent = "Network error. Please check your connection and try again.";
+    errEl.hidden = false;
+    btn.disabled = false;
+    btn.textContent = "Set new password";
+  }
 }
 
 function showApp() {
@@ -162,6 +331,7 @@ async function handleLogout() {
 function forceLogout() {
   currentUser = null;
   _sitesCache = null;
+  _refreshPromise = null;
   const pill = document.getElementById("profile-pill");
   if (pill) pill.hidden = true;
   showLogin();
@@ -1588,13 +1758,38 @@ window.addEventListener("hashchange", () => { if (currentUser) { parseHash(); re
 // ---- Boot: gate the app behind authentication ----
 async function boot() {
   initThemeToggle(); // theme toggle works on the login screen too
-  const user = await fetchMe();
+
+  // If the URL is /reset-password?token=…, capture the token early.
+  const isResetRoute = location.pathname === "/reset-password";
+  const resetToken = isResetRoute
+    ? new URLSearchParams(location.search).get("token")
+    : null;
+
+  let user = await fetchMe();
+  if (!user) {
+    // Silent refresh: try to exchange a live refresh-token cookie for a new
+    // session before falling back to the login screen.
+    const refreshed = await attemptRefresh();
+    if (refreshed) user = refreshed;
+  }
+
   if (user) {
     currentUser = user;
+    if (isResetRoute) history.replaceState({}, "", "/");
     showApp();
     renderProfilePill();
     parseHash();
     render();
+  } else if (resetToken) {
+    _resetToken = resetToken;
+    document.body.classList.add("pre-auth");
+    document.getElementById("login-screen").hidden = false;
+    if (!_authWired) {
+      _authWired = true;
+      wireAuthScreens();
+    }
+    showAuthPanel("reset-panel");
+    document.getElementById("reset-password-input").focus();
   } else {
     showLogin();
   }

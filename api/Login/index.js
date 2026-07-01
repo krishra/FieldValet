@@ -1,5 +1,12 @@
-const { hashPassword, verifyPassword, signSession, sessionCookie, emailKey, normalizeEmail, json } = require("../shared/auth");
-const { tableClient, USERS_TABLE, USERS_PARTITION } = require("../shared/storage");
+const {
+  hashPassword, verifyPassword, signSession, sessionCookie,
+  emailKey, normalizeEmail, json,
+  generateToken, refreshCookie, REFRESH_TTL_SECONDS,
+} = require("../shared/auth");
+const {
+  tableClient, USERS_TABLE, USERS_PARTITION,
+  REFRESH_TOKENS_TABLE, REFRESH_TOKENS_PARTITION, ensureTable,
+} = require("../shared/storage");
 
 // A dummy hash to verify against when the user does not exist, so that a missing
 // user and a wrong password take the same amount of time (no user enumeration).
@@ -42,13 +49,25 @@ module.exports = async function (context, req) {
       tid: user.tenantId,
       role: user.role || "member",
     };
-    const token = signSession(claims);
+    const accessToken = signSession(claims);
+
+    // Issue a long-lived refresh token stored server-side so it can be revoked.
+    await ensureTable(REFRESH_TOKENS_TABLE);
+    const rt = generateToken();
+    await tableClient(REFRESH_TOKENS_TABLE).createEntity({
+      partitionKey: REFRESH_TOKENS_PARTITION,
+      rowKey: rt.tokenId,
+      userId: user.userId,
+      userRowKey: emailKey(user.email),
+      tokenHash: rt.tokenHash,
+      expiresAt: new Date(Date.now() + REFRESH_TTL_SECONDS * 1000),
+    });
 
     json(
       context,
       200,
       { userId: user.userId, fullName: user.fullName, email: user.email, tenantId: user.tenantId, role: claims.role },
-      { "Set-Cookie": sessionCookie(token) }
+      { "Set-Cookie": [sessionCookie(accessToken), refreshCookie(rt.tokenValue)] }
     );
   } catch (err) {
     context.log.error("Login failed", err);
