@@ -218,6 +218,9 @@ function renderSecondary() {
 function renderView() {
   const tab = NAV.find((t) => t.id === state.tab);
   const sub = tab.subtabs[state.sub];
+
+  // Close any live chat connection when navigating away from the Chats tab.
+  if (tab.id !== "chats" && typeof teardownChats === "function") teardownChats();
   const title = tab.label;
   const where = sub ? `${tab.label} › ${sub}` : tab.label;
 
@@ -233,6 +236,11 @@ function renderView() {
 
   if (tab.id === "sites" && sub === "Work orders") {
     renderWorkOrdersList();
+    return;
+  }
+
+  if (tab.id === "chats" && typeof renderChats === "function") {
+    renderChats();
     return;
   }
 

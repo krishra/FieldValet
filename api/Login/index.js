@@ -47,7 +47,7 @@ module.exports = async function (context, req) {
     json(
       context,
       200,
-      { fullName: user.fullName, email: user.email, tenantId: user.tenantId, role: claims.role },
+      { userId: user.userId, fullName: user.fullName, email: user.email, tenantId: user.tenantId, role: claims.role },
       { "Set-Cookie": sessionCookie(token) }
     );
   } catch (err) {

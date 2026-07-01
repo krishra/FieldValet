@@ -5,6 +5,7 @@ module.exports = async function (context, req) {
   if (!session) return;
 
   json(context, 200, {
+    userId: session.sub || "",
     fullName: session.name,
     email: session.email,
     tenantId: session.tid,

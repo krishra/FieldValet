@@ -16,7 +16,9 @@ module.exports = async function (context, req) {
       queryOptions: { filter: `PartitionKey eq '${tenantId.replace(/'/g, "''")}'` },
     });
     for await (const e of iter) {
-      rows.push({ name: e.name, address: e.address || "" });
+      // rowKey is a stable, key-safe id per site (base64url of the name) — used as
+      // the locationId for chat threads.
+      rows.push({ id: e.rowKey, name: e.name, address: e.address || "" });
     }
 
     rows.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
