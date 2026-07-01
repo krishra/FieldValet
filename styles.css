@@ -674,6 +674,21 @@ body {
 }
 [data-theme="dark"] .login-error { background: #2d1515; border-color: #7f1d1d; color: #fca5a5; }
 
+/* "Forgot password?" and "Back to sign in" helper row */
+.login-aux { margin-top: 14px; text-align: center; }
+.login-link {
+  background: none;
+  border: none;
+  color: var(--brand);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.login-link:hover { opacity: 0.75; }
+.login-link:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 2px; }
+
 /* ===== Sidebar footer (pinned to bottom of the left rail) ===== */
 .sidebar-foot { margin-top: auto; position: relative; display: flex; flex-direction: column; gap: 10px; padding: 8px; }
 .sidebar-tools { display: flex; align-items: center; gap: 10px; }

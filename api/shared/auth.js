@@ -102,6 +102,44 @@ function emailKey(email) {
     .replace(/=+$/, "");
 }
 
+// ---- Refresh tokens ----
+// Opaque tokens: <UUID>:<64-hex-chars>. Neither component contains ":", so
+// a single indexOf(":") split is unambiguous.
+const REFRESH_COOKIE_NAME = "fv_refresh";
+const REFRESH_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 days
+
+function generateToken() {
+  const tokenId = crypto.randomUUID();
+  const secretHex = crypto.randomBytes(32).toString("hex");
+  const tokenHash = crypto.createHash("sha256").update(secretHex).digest("hex");
+  return { tokenId, tokenHash, tokenValue: `${tokenId}:${secretHex}` };
+}
+
+// Parses both refresh-cookie values and password-reset URL values (same format).
+function parseTokenValue(value) {
+  const str = String(value || "");
+  const idx = str.indexOf(":");
+  if (idx === -1) return null;
+  const tokenId = str.slice(0, idx);
+  const secretHex = str.slice(idx + 1);
+  if (!tokenId || secretHex.length !== 64) return null;
+  return { tokenId, secretHex };
+}
+
+function hashSecret(secret) {
+  return crypto.createHash("sha256").update(String(secret)).digest("hex");
+}
+
+function refreshCookie(tokenValue) {
+  // Path=/api/auth scopes the cookie to auth endpoints only, keeping it off
+  // all other API calls (GetLocations, PostMessage, etc.).
+  return `${REFRESH_COOKIE_NAME}=${tokenValue}; HttpOnly; Secure; SameSite=Strict; Path=/api/auth; Max-Age=${REFRESH_TTL_SECONDS}`;
+}
+
+function clearedRefreshCookie() {
+  return `${REFRESH_COOKIE_NAME}=; HttpOnly; Secure; SameSite=Strict; Path=/api/auth; Max-Age=0`;
+}
+
 // ---- HTTP helpers ----
 function json(context, status, body, extraHeaders) {
   context.res = {
@@ -124,6 +162,8 @@ function requireSession(context, req) {
 module.exports = {
   COOKIE_NAME,
   SESSION_TTL_SECONDS,
+  REFRESH_COOKIE_NAME,
+  REFRESH_TTL_SECONDS,
   hashPassword,
   verifyPassword,
   signSession,
@@ -136,4 +176,9 @@ module.exports = {
   normalizeEmail,
   emailKey,
   json,
+  generateToken,
+  parseTokenValue,
+  hashSecret,
+  refreshCookie,
+  clearedRefreshCookie,
 };
