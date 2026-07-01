@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "FieldValet Static",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["-e", "require('http').createServer((req,res)=>{const fs=require('fs'),path=require('path');let f=path.join('C:/Users/krish.COLUMBIA/Claude/Projects/Janitorial software solution/FieldValet',req.url==='/'?'index.html':req.url);fs.readFile(f,(e,d)=>{if(e){res.writeHead(404);res.end();}else{const ext=path.extname(f);const ct={'html':'text/html','js':'application/javascript','css':'text/css'}[ext.slice(1)]||'application/octet-stream';res.writeHead(200,{'Content-Type':ct});res.end(d);}});}).listen(4280,()=>console.log('ready'))"],
+      "port": 4280
+    }
+  ]
+}
