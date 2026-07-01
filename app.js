@@ -7,7 +7,7 @@ const NAV = [
   { id: "sites", label: "Sites", subtabs: ["Site info", "Security wall", "Work orders"] },
   { id: "chats", label: "Chats", subtabs: [] },
   { id: "scheduling", label: "Scheduling", subtabs: ["Calendar", "Time clock", "Coverage"] },
-  { id: "hiring", label: "Hiring", subtabs: [] },
+  { id: "people", label: "People", subtabs: ["Team", "Hiring"] },
 ];
 
 const state = { tab: "dashboard", sub: 0 };
@@ -236,6 +236,11 @@ function renderView() {
 
   if (tab.id === "sites" && sub === "Work orders") {
     renderWorkOrdersList();
+    return;
+  }
+
+  if (tab.id === "people" && sub === "Team") {
+    renderTeamList();
     return;
   }
 
@@ -1115,6 +1120,426 @@ async function handleSaveSite() {
     saveBtn.disabled = false;
     saveBtn.textContent = "Save Site";
   }
+}
+
+// ---- People / Team ----
+
+const TEAM_MEMBERS = [
+  { name: "Abril Garcia Valentin", jobTitle: "Cleaner" },
+  { name: "Aida A. Vasquez", jobTitle: "Cleaner" },
+  { name: "Alejandro Garcia Perez", jobTitle: "Cleaner" },
+  { name: "Alex Reny Herrera", jobTitle: "Cleaner" },
+  { name: "Alfredo Rojas JR", jobTitle: "Cleaner" },
+  { name: "Alfredo Acevedo", jobTitle: "Cleaner" },
+  { name: "Alfredo Hornelas", jobTitle: "Supervisor" },
+  { name: "Alison A. Quintanilla Ramirez", jobTitle: "Cleaner" },
+  { name: "All Clean", jobTitle: "Cleaner" },
+  { name: "All Clean - Kent", jobTitle: "Cleaner" },
+  { name: "Amanda Medina Chávez", jobTitle: "Cleaner" },
+  { name: "Ana Carolina Sorto Barahona", jobTitle: "Cleaner" },
+  { name: "Ana K. Texoptitlan", jobTitle: "Cleaner" },
+  { name: "Angela Lemus Tax", jobTitle: "Cleaner" },
+  { name: "Angelina Villa", jobTitle: "Cleaner" },
+  { name: "Antonio Cruz", jobTitle: "Supervisor" },
+  { name: "April Stutzke", jobTitle: "Cleaner" },
+  { name: "Atest Kay", jobTitle: "Cleaner" },
+  { name: "Aurora Esquivel Jaime", jobTitle: "Cleaner" },
+  { name: "Brenda Mendez Zurita", jobTitle: "Cleaner" },
+  { name: "Brenda Veliz Barrera", jobTitle: "Cleaner" },
+  { name: "Camila Miller", jobTitle: "Cleaner" },
+  { name: "Carlos E. Lopez Sanchez", jobTitle: "Cleaner" },
+  { name: "Carlos J. Caprio Trejo", jobTitle: "Cleaner" },
+  { name: "Carmen L Martinez Cortes", jobTitle: "Cleaner" },
+  { name: "Cecilia Ramírez Salazar", jobTitle: "Cleaner" },
+  { name: "Cesar David Oseguera Morales", jobTitle: "Cleaner" },
+  { name: "Chris Birkholz", jobTitle: "Cleaner" },
+  { name: "Christal Clear Cleaning", jobTitle: "Cleaner" },
+  { name: "Diana L Guerra Martinez", jobTitle: "Cleaner" },
+  { name: "Diego Armando Torres Tapia", jobTitle: "Cleaner" },
+  { name: "Dust n Shine", jobTitle: "Cleaner" },
+  { name: "Edgar Y López Mejía", jobTitle: "Cleaner" },
+  { name: "Edras Emanuel Mejia Sanchez", jobTitle: "Cleaner" },
+  { name: "Elizabeth Lucas Ramos", jobTitle: "Cleaner" },
+  { name: "Elizabeth Montalvan", jobTitle: "Supervisor" },
+  { name: "Elmer A Castillo Siguenza", jobTitle: "Cleaner" },
+  { name: "Elsy Noemi Orellana", jobTitle: "Cleaner" },
+  { name: "Elvia Cruz Santiago", jobTitle: "Cleaner" },
+  { name: "Elzey Andrews", jobTitle: "Cleaner" },
+  { name: "Erik Andersson", jobTitle: "Supervisor" },
+  { name: "Erik Vielma", jobTitle: "Cleaner" },
+  { name: "Ernesmely L. Monges Garcia", jobTitle: "Cleaner" },
+  { name: "Esperanza Suarez Montero", jobTitle: "Cleaner" },
+  { name: "Estefania Cantor Hernandez", jobTitle: "Cleaner" },
+  { name: "Excelsior Cleaning", jobTitle: "Cleaner" },
+  { name: "Ezequiel Sique Aaguilar", jobTitle: "Cleaner" },
+  { name: "Felicita Rossana Perez-Mendoza", jobTitle: "Cleaner" },
+  { name: "Felipa Ambriz Alvarez", jobTitle: "Cleaner" },
+  { name: "Floriseli Ruiz Romero", jobTitle: "Cleaner" },
+  { name: "Hilda T. Martinez-Perez", jobTitle: "Cleaner" },
+  { name: "Imelda Gonzalez", jobTitle: "Cleaner" },
+  { name: "iPro Building Services", jobTitle: "Cleaner" },
+  { name: "Irish Barlaan", jobTitle: "Supervisor" },
+  { name: "Isaac Alba", jobTitle: "Cleaner" },
+  { name: "Jackie Lopez Flores", jobTitle: "Cleaner" },
+  { name: "Jenny SL", jobTitle: "Cleaner" },
+  { name: "Joan Corona Pineda", jobTitle: "Cleaner" },
+  { name: "Joanna Pérez", jobTitle: "Cleaner" },
+  { name: "Jose C Lopez Hidalgo", jobTitle: "Cleaner" },
+  { name: "Jose I. Reyes Coreas", jobTitle: "Cleaner" },
+  { name: "Jovanny Balbuena Guerreo", jobTitle: "Cleaner" },
+  { name: "Jovany Medina", jobTitle: "Cleaner" },
+  { name: "Juan Carlos Huerta Medina", jobTitle: "Cleaner" },
+  { name: "Juana R. Alanis", jobTitle: "Cleaner" },
+  { name: "Karla Santos Najarro", jobTitle: "Cleaner" },
+  { name: "Katy Y Pineda Jimenez", jobTitle: "Cleaner" },
+  { name: "Layla Rojas", jobTitle: "Cleaner" },
+  { name: "Leslie Gonzalez", jobTitle: "Cleaner" },
+  { name: "Lipsa M Martinez Cortes", jobTitle: "Cleaner" },
+  { name: "Lizeth Mayely Flores Quiroz", jobTitle: "Cleaner" },
+  { name: "Lucia Saenz", jobTitle: "Cleaner" },
+  { name: "Luis Fuentes Vazquez", jobTitle: "Supervisor" },
+  { name: "Magdalena Euceda Aguiluz", jobTitle: "Cleaner" },
+  { name: "Marbelly Rodriguez", jobTitle: "Cleaner" },
+  { name: "María G Meraz Valdominos", jobTitle: "Cleaner" },
+  { name: "Maria Irma Torres-Salcedo", jobTitle: "Cleaner" },
+  { name: "Maria V. Soto Ruiz", jobTitle: "Cleaner" },
+  { name: "Maribel Ibarra Trejo", jobTitle: "Cleaner" },
+  { name: "Maribel H. Zapatero", jobTitle: "Cleaner" },
+  { name: "Maricela Nieto", jobTitle: "Supervisor" },
+  { name: "Mario Duarte Valdo", jobTitle: "Cleaner" },
+  { name: "Maurilia Olvera", jobTitle: "Cleaner" },
+  { name: "MD Janitorial", jobTitle: "Cleaner" },
+  { name: "Merlia Lopez Barragan", jobTitle: "Cleaner" },
+  { name: "Mirna Martinez Jimenez", jobTitle: "Cleaner" },
+  { name: "MJ Cleaning", jobTitle: "Cleaner" },
+  { name: "Nancy Cabrera Capulin", jobTitle: "Cleaner" },
+  { name: "Nancy Oviedo", jobTitle: "Supervisor" },
+  { name: "Noe Lopez Camacho", jobTitle: "Cleaner" },
+  { name: "Noemi Mendoza Gonzalez", jobTitle: "Cleaner" },
+  { name: "Olga Menes Serna", jobTitle: "Cleaner" },
+  { name: "Osvaldo Margarito", jobTitle: "Cleaner" },
+  { name: "Patricia Canales Canada", jobTitle: "Cleaner" },
+  { name: "Rocio Garcia Tenorio", jobTitle: "Cleaner" },
+  { name: "Ronaldo A Huerta Medina", jobTitle: "Cleaner" },
+  { name: "Saidy G Medina", jobTitle: "Cleaner" },
+  { name: "Samuel Diaz Ruiz", jobTitle: "Cleaner" },
+  { name: "Sharon Arellano Alvarez", jobTitle: "Cleaner" },
+  { name: "Sherlyn A. Bautista Leyva", jobTitle: "Cleaner" },
+  { name: "Stephanie Ramirez", jobTitle: "Cleaner" },
+  { name: "Steven Kearney", jobTitle: "Cleaner" },
+  { name: "Steven Ramos", jobTitle: "Cleaner" },
+  { name: "Test Test", jobTitle: "Cleaner" },
+  { name: "Test - Kevin", jobTitle: "Supervisor" },
+  { name: "Test - Krishnan", jobTitle: "Supervisor" },
+  { name: "Test - Lily", jobTitle: "Supervisor" },
+  { name: "Veronica A. Angueta", jobTitle: "Cleaner" },
+  { name: "Vianey Alvarado Martinez", jobTitle: "Cleaner" },
+  { name: "Vidal Urzua Chavez", jobTitle: "Cleaner" },
+  { name: "Yeraldin Y Romero Dávila", jobTitle: "Cleaner" },
+  { name: "Yesica Mánriquez Garcia", jobTitle: "Supervisor" },
+];
+
+function renderTeamList() {
+  const view = document.getElementById("view");
+  view.innerHTML = `
+    <h1 class="page-title">People</h1>
+    <p class="page-sub">People › Team</p>
+    <div class="sites-toolbar">
+      <input id="team-search" class="sites-search" type="search" placeholder="Search by name or role…" />
+      <span id="team-count" class="sites-count"></span>
+      <button class="btn-primary" id="new-member-btn">+ New Team Member</button>
+    </div>
+    <table class="sites-table">
+      <thead><tr><th>Name</th><th>Role</th></tr></thead>
+      <tbody id="team-tbody"></tbody>
+    </table>`;
+
+  function filterMembers(q) {
+    const lower = q.toLowerCase();
+    return TEAM_MEMBERS.filter(
+      (m) => m.name.toLowerCase().includes(lower) || m.jobTitle.toLowerCase().includes(lower)
+    );
+  }
+
+  function paintTeamRows(members) {
+    const tbody = document.getElementById("team-tbody");
+    const count = document.getElementById("team-count");
+    if (!tbody) return;
+    count.textContent = `${members.length} member${members.length !== 1 ? "s" : ""}`;
+    if (members.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="2" class="sites-empty">No members match your search.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = members
+      .map(
+        (m) =>
+          `<tr>
+            <td class="site-name">${escHtml(m.name)}</td>
+            <td>${escHtml(m.jobTitle)}</td>
+          </tr>`
+      )
+      .join("");
+  }
+
+  paintTeamRows(TEAM_MEMBERS);
+
+  document.getElementById("team-search").addEventListener("input", (e) => {
+    paintTeamRows(filterMembers(e.target.value.trim()));
+  });
+
+  document.getElementById("new-member-btn").addEventListener("click", () => openNewTeamMemberDrawer());
+}
+
+async function openNewTeamMemberDrawer() {
+  if (document.getElementById("tm-drawer")) return;
+
+  if (!_sitesCache) {
+    try {
+      const res = await apiFetch("/api/locations");
+      if (res.ok) _sitesCache = (await res.json()).locations || [];
+    } catch (e) {
+      _sitesCache = _sitesCache || [];
+    }
+  }
+
+  const overlay = document.createElement("div");
+  overlay.id = "tm-drawer-overlay";
+  overlay.className = "drawer-overlay";
+  overlay.addEventListener("click", closeTeamMemberDrawer);
+
+  const drawer = document.createElement("div");
+  drawer.id = "tm-drawer";
+  drawer.className = "drawer";
+
+  const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+  const locationCheckboxes = (_sitesCache && _sitesCache.length)
+    ? _sitesCache.map((s) =>
+        `<label class="be-check-label" style="display:block;margin:2px 0">
+          <input type="checkbox" class="form-checkbox tm-loc" value="${escHtml(s.name)}" /> ${escHtml(s.name)}
+        </label>`
+      ).join("")
+    : `<span class="form-hint">No locations loaded.</span>`;
+
+  const availRows = DAYS.map((day, i) =>
+    `<tr>
+      <td style="padding:6px 8px;font-size:13px">${day}</td>
+      <td><input type="time" class="form-input" data-day-idx="${i}" data-avail="start" style="padding:4px 6px;font-size:13px" /></td>
+      <td><input type="time" class="form-input" data-day-idx="${i}" data-avail="end" style="padding:4px 6px;font-size:13px" /></td>
+      <td style="text-align:center"><input type="checkbox" class="form-checkbox" data-day-idx="${i}" data-avail="unavail" /></td>
+    </tr>`
+  ).join("");
+
+  drawer.innerHTML = `
+    <div class="drawer-header">
+      <h2 class="drawer-title">New Team Member</h2>
+      <button class="drawer-close" id="tm-drawer-close-btn" aria-label="Close">✕</button>
+    </div>
+    <div class="drawer-body">
+      <form id="new-tm-form" novalidate>
+
+        <fieldset class="form-section">
+          <legend>Contact Info</legend>
+          <div class="form-row">
+            <label class="form-label" for="tm-role">Role</label>
+            <select class="form-input" id="tm-role">
+              <option value="">— Select —</option>
+              <option>Cleaner</option>
+              <option>Supervisor</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="tm-employee-id">Employee ID</label>
+            <input class="form-input" id="tm-employee-id" type="text" placeholder="e.g. EMP-001" />
+          </div>
+          <div class="form-row-group">
+            <div class="form-row">
+              <label class="form-label required" for="tm-first-name">First Name</label>
+              <input class="form-input" id="tm-first-name" type="text" required />
+            </div>
+            <div class="form-row">
+              <label class="form-label required" for="tm-last-name">Last Name</label>
+              <input class="form-input" id="tm-last-name" type="text" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="tm-email">Email</label>
+            <input class="form-input" id="tm-email" type="email" placeholder="name@example.com" />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="tm-phone">Phone Number</label>
+            <input class="form-input" id="tm-phone" type="tel" placeholder="e.g. +1 555 000 1234" />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="tm-address">Address</label>
+            <input class="form-input" id="tm-address" type="text" placeholder="Street address" />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="tm-country">Country</label>
+            <input class="form-input" id="tm-country" type="text" placeholder="e.g. US" />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="tm-timezone">Time Zone</label>
+            <select class="form-input" id="tm-timezone">
+              <option value="">— Select —</option>
+              <option>America/New_York</option>
+              <option>America/Chicago</option>
+              <option>America/Denver</option>
+              <option>America/Los_Angeles</option>
+              <option>America/Anchorage</option>
+              <option>Pacific/Honolulu</option>
+              <option>America/Phoenix</option>
+              <option>UTC</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="tm-language">Language</label>
+            <select class="form-input" id="tm-language">
+              <option value="">— Select —</option>
+              <option>English</option>
+              <option>Spanish</option>
+              <option>French</option>
+              <option>Portuguese</option>
+              <option>Somali</option>
+              <option>Vietnamese</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="tm-pin">Security Pin</label>
+            <input class="form-input" id="tm-pin" type="password" placeholder="••••" maxlength="8" autocomplete="new-password" />
+          </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <legend>Employment Information</legend>
+          <div class="form-row">
+            <label class="form-label" for="tm-employment-type">Employment Type</label>
+            <select class="form-input" id="tm-employment-type">
+              <option value="">— Select —</option>
+              <option>Full time</option>
+              <option>Part time</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="tm-reports-to">Reports To</label>
+            <input class="form-input" id="tm-reports-to" type="text" placeholder="Supervisor name" />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="tm-hire-date">Hire Date</label>
+            <input class="form-input" id="tm-hire-date" type="date" />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="tm-override-phone">Override Support Phone No.</label>
+            <input class="form-input" id="tm-override-phone" type="tel" placeholder="e.g. +1 555 000 9999" />
+          </div>
+          <div class="form-row form-row-inline" style="margin-bottom:10px">
+            <input class="form-checkbox" id="tm-geofence-disable" type="checkbox" />
+            <label class="form-label" for="tm-geofence-disable">Disable Mandatory Geofence Clock In/Out</label>
+          </div>
+          <div class="form-row form-row-inline" style="margin-bottom:14px">
+            <input class="form-checkbox" id="tm-travel-time" type="checkbox" />
+            <label class="form-label" for="tm-travel-time">Track Travel Time</label>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Location Assignments</label>
+            <p class="form-hint">Check locations to assign this team member</p>
+            <div id="tm-location-list" style="max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:4px;padding:8px">
+              ${locationCheckboxes}
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <legend>Availability</legend>
+          <p class="form-hint">Set available hours per day of week</p>
+          <table class="sites-table" style="font-size:13px">
+            <thead>
+              <tr><th>Day</th><th>Start Time</th><th>End Time</th><th>Unavailable</th></tr>
+            </thead>
+            <tbody>${availRows}</tbody>
+          </table>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <legend>Notes</legend>
+          <div class="break-entries-header">
+            <span class="form-hint" style="margin:0">Additional notes</span>
+            <button type="button" class="btn-secondary btn-sm" id="tm-add-note-btn">+ Add Note</button>
+          </div>
+          <div id="tm-notes-list"></div>
+        </fieldset>
+
+        <div id="tm-form-error" class="form-error" hidden></div>
+      </form>
+    </div>
+    <div class="drawer-footer">
+      <button type="button" class="btn-ghost" id="tm-cancel-btn">Cancel</button>
+      <button type="button" class="btn-primary" id="tm-save-btn">Save Team Member</button>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(drawer);
+
+  requestAnimationFrame(() => {
+    overlay.classList.add("open");
+    drawer.classList.add("open");
+  });
+
+  document.getElementById("tm-drawer-close-btn").addEventListener("click", closeTeamMemberDrawer);
+  document.getElementById("tm-cancel-btn").addEventListener("click", closeTeamMemberDrawer);
+  document.getElementById("tm-save-btn").addEventListener("click", handleSaveTeamMember);
+  document.getElementById("tm-add-note-btn").addEventListener("click", addTeamMemberNoteRow);
+}
+
+let _tmNoteCount = 0;
+
+function addTeamMemberNoteRow() {
+  _tmNoteCount++;
+  const list = document.getElementById("tm-notes-list");
+  const row = document.createElement("div");
+  row.className = "break-entry-row";
+  row.style.alignItems = "flex-start";
+  row.innerHTML = `
+    <textarea class="form-input tm-note-text" rows="2" placeholder="Enter note…" style="flex:1;resize:vertical"></textarea>
+    <button type="button" class="btn-ghost btn-sm be-remove" aria-label="Remove note">✕</button>`;
+  row.querySelector(".be-remove").addEventListener("click", () => row.remove());
+  list.appendChild(row);
+}
+
+function closeTeamMemberDrawer() {
+  const overlay = document.getElementById("tm-drawer-overlay");
+  const drawer = document.getElementById("tm-drawer");
+  if (!drawer) return;
+  overlay.classList.remove("open");
+  drawer.classList.remove("open");
+  setTimeout(() => {
+    overlay && overlay.remove();
+    drawer && drawer.remove();
+  }, 280);
+}
+
+function handleSaveTeamMember() {
+  const errEl = document.getElementById("tm-form-error");
+  errEl.hidden = true;
+
+  const firstName = document.getElementById("tm-first-name").value.trim();
+  const lastName = document.getElementById("tm-last-name").value.trim();
+
+  if (!firstName || !lastName) {
+    errEl.textContent = "First Name and Last Name are required.";
+    errEl.hidden = false;
+    return;
+  }
+
+  const newMember = {
+    name: `${firstName} ${lastName}`,
+    jobTitle: document.getElementById("tm-role").value || "Cleaner",
+  };
+
+  TEAM_MEMBERS.push(newMember);
+  closeTeamMemberDrawer();
+  renderTeamList();
 }
 
 function escHtml(s) {
