@@ -203,9 +203,14 @@ body {
 
 /* Dashboard: map as a card panel */
 .view.dashboard-view {
-  padding: 24px;
+  padding: 40px 36px 24px;
   max-width: 100%;
   animation: none;
+  display: flex;
+  flex-direction: column;
+}
+.dashboard-title {
+  margin: 0 0 20px;
 }
 #dashboard-map-card {
   border: 1px solid var(--line);
@@ -213,10 +218,11 @@ body {
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   position: relative;
+  flex: 1;
 }
 #dashboard-map {
   width: 100%;
-  height: calc(100vh - var(--header-h) - 120px);
+  height: 100%;
 }
 #dashboard-spinner {
   position: absolute;
