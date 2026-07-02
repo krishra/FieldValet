@@ -440,7 +440,7 @@ function renderView() {
 async function renderDashboard() {
   const view = document.getElementById("view");
   view.classList.add("dashboard-view");
-  view.innerHTML = `<div id="dashboard-map"></div><div id="dashboard-spinner"><div class="map-spinner-ring"></div></div>`;
+  view.innerHTML = `<div id="dashboard-map-card"><div id="dashboard-map"></div><div id="dashboard-spinner"><div class="map-spinner-ring"></div></div></div>`;
 
   if (!window.atlas) {
     view.classList.remove("dashboard-view");
@@ -601,24 +601,60 @@ async function renderSitesList() {
     }
   }
 
+  // Build city options from data
+  const cities = [...new Set(_sitesCache.map(s => s.city).filter(Boolean))].sort();
+  const cityOptions = `<option value="">All cities</option>` + cities.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join("");
+
   view.innerHTML = `
     <h1 class="page-title">Sites</h1>
     <p class="page-sub">Sites › Site info</p>
     <div class="sites-toolbar">
       <input id="sites-search" class="sites-search" type="search" placeholder="Search by name or address…" />
+      <select id="sites-city-filter" class="sites-filter-select">
+        ${cityOptions}
+      </select>
       <span id="sites-count" class="sites-count"></span>
       <button class="btn-primary" id="new-site-btn">+ New Site</button>
     </div>
     <table class="sites-table">
-      <thead><tr><th>Name</th><th>Address</th></tr></thead>
+      <thead>
+        <tr>
+          <th class="sortable" data-col="name">Name <span class="sort-icon" id="sort-name">↕</span></th>
+          <th class="sortable" data-col="address">Address <span class="sort-icon" id="sort-address">↕</span></th>
+          <th>City</th>
+          <th>State</th>
+        </tr>
+      </thead>
       <tbody id="sites-tbody"></tbody>
     </table>`;
 
-  function filterSites(q) {
-    const lower = q.toLowerCase();
-    return _sitesCache.filter(
-      (s) => s.name.toLowerCase().includes(lower) || (s.address || "").toLowerCase().includes(lower)
-    );
+  let sortCol = "name";
+  let sortDir = 1; // 1 = asc, -1 = desc
+
+  function getFiltered() {
+    const q = (document.getElementById("sites-search").value || "").toLowerCase().trim();
+    const city = (document.getElementById("sites-city-filter").value || "").toLowerCase();
+    return _sitesCache.filter(s => {
+      const matchQ = !q || s.name.toLowerCase().includes(q) || (s.address || "").toLowerCase().includes(q);
+      const matchCity = !city || (s.city || "").toLowerCase() === city;
+      return matchQ && matchCity;
+    });
+  }
+
+  function getSorted(sites) {
+    return [...sites].sort((a, b) => {
+      const av = (a[sortCol] || "").toLowerCase();
+      const bv = (b[sortCol] || "").toLowerCase();
+      return av < bv ? -sortDir : av > bv ? sortDir : 0;
+    });
+  }
+
+  function updateSortIcons() {
+    ["name", "address"].forEach(col => {
+      const el = document.getElementById(`sort-${col}`);
+      if (!el) return;
+      el.textContent = col === sortCol ? (sortDir === 1 ? "↑" : "↓") : "↕";
+    });
   }
 
   function paintRows(sites) {
@@ -627,24 +663,40 @@ async function renderSitesList() {
     if (!tbody) return;
     count.textContent = `${sites.length} site${sites.length !== 1 ? "s" : ""}`;
     if (sites.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="2" class="sites-empty">No sites match your search.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" class="sites-empty">No sites match your search.</td></tr>`;
       return;
     }
     tbody.innerHTML = sites
-      .map(
-        (s) =>
-          `<tr>
-            <td class="site-name">${escHtml(s.name)}</td>
-            <td class="site-address">${escHtml(s.address || "")}</td>
-          </tr>`
-      )
+      .map(s => `<tr>
+        <td class="site-name">${escHtml(s.name)}</td>
+        <td class="site-address">${escHtml(s.address || "")}</td>
+        <td>${escHtml(s.city || "")}</td>
+        <td>${escHtml(s.state || "")}</td>
+      </tr>`)
       .join("");
   }
 
-  paintRows(_sitesCache);
+  function refresh() {
+    updateSortIcons();
+    paintRows(getSorted(getFiltered()));
+  }
 
-  document.getElementById("sites-search").addEventListener("input", (e) => {
-    paintRows(filterSites(e.target.value.trim()));
+  refresh();
+
+  document.getElementById("sites-search").addEventListener("input", refresh);
+  document.getElementById("sites-city-filter").addEventListener("change", refresh);
+
+  document.querySelectorAll(".sites-table th.sortable").forEach(th => {
+    th.addEventListener("click", () => {
+      const col = th.dataset.col;
+      if (sortCol === col) {
+        sortDir *= -1;
+      } else {
+        sortCol = col;
+        sortDir = 1;
+      }
+      refresh();
+    });
   });
 
   document.getElementById("new-site-btn").addEventListener("click", () => openNewSiteDrawer());
@@ -1559,24 +1611,56 @@ const TEAM_MEMBERS = [
 
 function renderTeamList() {
   const view = document.getElementById("view");
+
+  const roles = [...new Set(TEAM_MEMBERS.map(m => m.jobTitle).filter(Boolean))].sort();
+  const roleOptions = `<option value="">All roles</option>` + roles.map(r => `<option value="${escHtml(r)}">${escHtml(r)}</option>`).join("");
+
   view.innerHTML = `
     <h1 class="page-title">People</h1>
     <p class="page-sub">People › Team</p>
     <div class="sites-toolbar">
       <input id="team-search" class="sites-search" type="search" placeholder="Search by name or role…" />
+      <select id="team-role-filter" class="sites-filter-select">${roleOptions}</select>
       <span id="team-count" class="sites-count"></span>
       <button class="btn-primary" id="new-member-btn">+ New Team Member</button>
     </div>
     <table class="sites-table">
-      <thead><tr><th>Name</th><th>Role</th></tr></thead>
+      <thead>
+        <tr>
+          <th class="sortable" data-col="name">Name <span class="sort-icon" id="tsort-name">↕</span></th>
+          <th class="sortable" data-col="jobTitle">Role <span class="sort-icon" id="tsort-jobTitle">↑</span></th>
+        </tr>
+      </thead>
       <tbody id="team-tbody"></tbody>
     </table>`;
 
-  function filterMembers(q) {
-    const lower = q.toLowerCase();
-    return TEAM_MEMBERS.filter(
-      (m) => m.name.toLowerCase().includes(lower) || m.jobTitle.toLowerCase().includes(lower)
-    );
+  let sortCol = "jobTitle";
+  let sortDir = 1;
+
+  function getFiltered() {
+    const q = (document.getElementById("team-search").value || "").toLowerCase().trim();
+    const role = (document.getElementById("team-role-filter").value || "").toLowerCase();
+    return TEAM_MEMBERS.filter(m => {
+      const matchQ = !q || m.name.toLowerCase().includes(q) || m.jobTitle.toLowerCase().includes(q);
+      const matchRole = !role || m.jobTitle.toLowerCase() === role;
+      return matchQ && matchRole;
+    });
+  }
+
+  function getSorted(members) {
+    return [...members].sort((a, b) => {
+      const av = (a[sortCol] || "").toLowerCase();
+      const bv = (b[sortCol] || "").toLowerCase();
+      return av < bv ? -sortDir : av > bv ? sortDir : 0;
+    });
+  }
+
+  function updateSortIcons() {
+    ["name", "jobTitle"].forEach(col => {
+      const el = document.getElementById(`tsort-${col}`);
+      if (!el) return;
+      el.textContent = col === sortCol ? (sortDir === 1 ? "↑" : "↓") : "↕";
+    });
   }
 
   function paintTeamRows(members) {
@@ -1589,20 +1673,29 @@ function renderTeamList() {
       return;
     }
     tbody.innerHTML = members
-      .map(
-        (m) =>
-          `<tr>
-            <td class="site-name">${escHtml(m.name)}</td>
-            <td>${escHtml(m.jobTitle)}</td>
-          </tr>`
-      )
+      .map(m => `<tr>
+        <td class="site-name">${escHtml(m.name)}</td>
+        <td>${escHtml(m.jobTitle)}</td>
+      </tr>`)
       .join("");
   }
 
-  paintTeamRows(TEAM_MEMBERS);
+  function refresh() {
+    updateSortIcons();
+    paintTeamRows(getSorted(getFiltered()));
+  }
 
-  document.getElementById("team-search").addEventListener("input", (e) => {
-    paintTeamRows(filterMembers(e.target.value.trim()));
+  refresh();
+
+  document.getElementById("team-search").addEventListener("input", refresh);
+  document.getElementById("team-role-filter").addEventListener("change", refresh);
+
+  document.querySelectorAll(".sites-table th.sortable").forEach(th => {
+    th.addEventListener("click", () => {
+      const col = th.dataset.col;
+      if (sortCol === col) { sortDir *= -1; } else { sortCol = col; sortDir = 1; }
+      refresh();
+    });
   });
 
   document.getElementById("new-member-btn").addEventListener("click", () => openNewTeamMemberDrawer());
