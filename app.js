@@ -440,7 +440,7 @@ function renderView() {
 async function renderDashboard() {
   const view = document.getElementById("view");
   view.classList.add("dashboard-view");
-  view.innerHTML = `<div id="dashboard-map"></div>`;
+  view.innerHTML = `<div id="dashboard-map"></div><div id="dashboard-spinner"><div class="map-spinner-ring"></div></div>`;
 
   if (!window.atlas) {
     view.classList.remove("dashboard-view");
@@ -480,6 +480,7 @@ async function renderDashboard() {
   });
 
   map.events.add("ready", async () => {
+    document.getElementById("dashboard-spinner")?.remove();
     map.resize();
 
     const datasource = new atlas.source.DataSource();
