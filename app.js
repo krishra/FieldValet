@@ -498,22 +498,37 @@ async function renderDashboard() {
 
     const features = [];
     let cacheUpdated = false;
-    await Promise.all(
-      locations.map(async (loc) => {
-        // Prefer coordinates stored at creation time — no API call needed.
-        if (loc.lat != null && loc.lng != null) {
-          features.push({
-            type: "Feature",
-            geometry: { type: "Point", coordinates: [loc.lng, loc.lat] },
-            properties: { name: loc.name, address: loc.address },
-          });
-          return;
-        }
 
-        // Legacy sites without stored coords: fall back to client-side geocoding.
-        if (!loc.address) return;
-        let coords = geocodeCache[loc.address];
-        if (!coords) {
+    // Fast path: sites with coordinates stored at creation time (or a cached
+    // geocode) need no API call — render them immediately. Only sites still
+    // missing coordinates fall through to live geocoding.
+    const needGeocode = [];
+    for (const loc of locations) {
+      if (loc.lat != null && loc.lng != null) {
+        features.push({
+          type: "Feature",
+          geometry: { type: "Point", coordinates: [loc.lng, loc.lat] },
+          properties: { name: loc.name, address: loc.address },
+        });
+      } else if (loc.address && geocodeCache[loc.address]) {
+        features.push({
+          type: "Feature",
+          geometry: { type: "Point", coordinates: geocodeCache[loc.address] },
+          properties: { name: loc.name, address: loc.address },
+        });
+      } else if (loc.address) {
+        needGeocode.push(loc);
+      }
+    }
+
+    // Slow path: geocode the stragglers with bounded concurrency. Firing all at
+    // once gets throttled by Azure Maps (429s), which is what made a cold
+    // dashboard crawl. Backfilling stored coordinates avoids this path entirely.
+    const GEOCODE_CONCURRENCY = 8;
+    for (let i = 0; i < needGeocode.length; i += GEOCODE_CONCURRENCY) {
+      const batch = needGeocode.slice(i, i + GEOCODE_CONCURRENCY);
+      await Promise.all(
+        batch.map(async (loc) => {
           try {
             const r = await fetch(
               `https://atlas.microsoft.com/search/address/json?api-version=1.0` +
@@ -523,19 +538,20 @@ async function renderDashboard() {
             );
             const data = await r.json();
             const pos = data.results?.[0]?.position;
-            if (pos) { coords = [pos.lon, pos.lat]; cacheUpdated = true; }
+            if (pos) {
+              const coords = [pos.lon, pos.lat];
+              geocodeCache[loc.address] = coords;
+              cacheUpdated = true;
+              features.push({
+                type: "Feature",
+                geometry: { type: "Point", coordinates: coords },
+                properties: { name: loc.name, address: loc.address },
+              });
+            }
           } catch {}
-        }
-        if (coords) {
-          geocodeCache[loc.address] = coords;
-          features.push({
-            type: "Feature",
-            geometry: { type: "Point", coordinates: coords },
-            properties: { name: loc.name, address: loc.address },
-          });
-        }
-      })
-    );
+        })
+      );
+    }
 
     if (cacheUpdated) {
       try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(geocodeCache)); } catch {}
@@ -1303,6 +1319,28 @@ function openNewSiteDrawer() {
 let _geofenceGeoJSON = null;
 let _drawingManager = null;
 
+// The Atlas drawing module is only needed by the geofence editor, so it's kept
+// out of the eager script load (which every page, including the Dashboard map,
+// would otherwise pay for). Injected once, on first use.
+let _drawingModulePromise = null;
+function loadDrawingModule() {
+  if (window.atlas && window.atlas.drawing) return Promise.resolve();
+  if (_drawingModulePromise) return _drawingModulePromise;
+  _drawingModulePromise = new Promise((resolve, reject) => {
+    const css = document.createElement("link");
+    css.rel = "stylesheet";
+    css.href = "https://atlas.microsoft.com/sdk/javascript/drawing/1/atlas-drawing.min.css";
+    document.head.appendChild(css);
+
+    const js = document.createElement("script");
+    js.src = "https://atlas.microsoft.com/sdk/javascript/drawing/1/atlas-drawing.min.js";
+    js.onload = () => resolve();
+    js.onerror = () => reject(new Error("Failed to load the map drawing module."));
+    document.head.appendChild(js);
+  });
+  return _drawingModulePromise;
+}
+
 async function initGeofenceMap() {
   const container = document.getElementById("geofence-map");
   if (!container || !window.atlas) return;
@@ -1339,9 +1377,18 @@ async function initGeofenceMap() {
     },
   });
 
-  map.events.add("ready", () => {
+  map.events.add("ready", async () => {
     // Force a resize so tiles fill the container correctly
     map.resize();
+    try {
+      await loadDrawingModule();
+    } catch (err) {
+      container.insertAdjacentHTML(
+        "beforeend",
+        `<div style="position:absolute;top:8px;left:8px;background:#fee2e2;color:#b91c1c;padding:6px 10px;border-radius:6px;font-size:12px">${escHtml(err.message)}</div>`
+      );
+      return;
+    }
     const drawingManager = new atlas.drawing.DrawingManager(map, {
       toolbar: new atlas.control.DrawingToolbar({
         buttons: ["draw-polygon", "draw-circle", "erase-geometry"],
