@@ -43,6 +43,9 @@ async function renderChats() {
     <div class="chat-shell">
       <aside class="chat-threads" id="chat-threads">
         <div class="chat-threads-head">Sites</div>
+        <div class="chat-threads-search-wrap">
+          <input id="chat-threads-search" class="chat-threads-search" type="search" placeholder="Search sites…" />
+        </div>
         <div class="chat-threads-list" id="chat-threads-list">Loading sites…</div>
       </aside>
       <section class="chat-main" id="chat-main">
@@ -71,9 +74,24 @@ async function renderChats() {
 function paintThreadList() {
   const list = document.getElementById("chat-threads-list");
   if (!list) return;
-  const sites = _sitesCache || [];
-  if (sites.length === 0) {
+
+  // Bind the search box once; it drives re-renders through this same function.
+  const searchEl = document.getElementById("chat-threads-search");
+  if (searchEl && !searchEl.dataset.bound) {
+    searchEl.dataset.bound = "1";
+    searchEl.addEventListener("input", () => paintThreadList());
+  }
+
+  const q = (searchEl ? searchEl.value : "").toLowerCase().trim();
+  if ((_sitesCache || []).length === 0) {
     list.innerHTML = `<div class="chat-threads-empty">No sites yet. Add a site first.</div>`;
+    return;
+  }
+  const sites = (_sitesCache || []).filter(s =>
+    !q || s.name.toLowerCase().includes(q) || (s.address || "").toLowerCase().includes(q)
+  );
+  if (sites.length === 0) {
+    list.innerHTML = `<div class="chat-threads-empty">No sites match your search.</div>`;
     return;
   }
   list.innerHTML = sites
