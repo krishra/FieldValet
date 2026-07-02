@@ -209,9 +209,20 @@ body {
   animation: none;
   position: relative;
 }
+.dashboard-title {
+  padding: 40px 36px 20px;
+}
+#dashboard-map-wrap {
+  position: relative;
+  flex: 1;
+}
 #dashboard-map {
   width: 100%;
-  height: calc(100vh - var(--header-h));
+  height: 100%;
+}
+.view.dashboard-view {
+  display: flex;
+  flex-direction: column;
 }
 #dashboard-spinner {
   position: absolute;

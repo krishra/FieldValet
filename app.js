@@ -440,7 +440,7 @@ function renderView() {
 async function renderDashboard() {
   const view = document.getElementById("view");
   view.classList.add("dashboard-view");
-  view.innerHTML = `<div id="dashboard-map"></div><div id="dashboard-spinner"><div class="map-spinner-ring"></div></div>`;
+  view.innerHTML = `<h1 class="page-title dashboard-title">Dashboard</h1><div id="dashboard-map-wrap"><div id="dashboard-map"></div><div id="dashboard-spinner"><div class="map-spinner-ring"></div></div></div>`;
 
   if (!window.atlas) {
     view.classList.remove("dashboard-view");
