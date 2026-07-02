@@ -501,12 +501,11 @@ async function renderDashboard() {
       locations.map(async (loc) => {
         // Prefer coordinates stored at creation time — no API call needed.
         if (loc.lat != null && loc.lng != null) {
-          features.push(
-            new atlas.data.Feature(new atlas.data.Point([loc.lng, loc.lat]), {
-              name: loc.name,
-              address: loc.address,
-            })
-          );
+          features.push({
+            type: "Feature",
+            geometry: { type: "Point", coordinates: [loc.lng, loc.lat] },
+            properties: { name: loc.name, address: loc.address },
+          });
           return;
         }
 
@@ -528,12 +527,11 @@ async function renderDashboard() {
         }
         if (coords) {
           geocodeCache[loc.address] = coords;
-          features.push(
-            new atlas.data.Feature(new atlas.data.Point(coords), {
-              name: loc.name,
-              address: loc.address,
-            })
-          );
+          features.push({
+            type: "Feature",
+            geometry: { type: "Point", coordinates: coords },
+            properties: { name: loc.name, address: loc.address },
+          });
         }
       })
     );
@@ -542,7 +540,7 @@ async function renderDashboard() {
       try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(geocodeCache)); } catch {}
     }
 
-    datasource.addMany(features);
+    datasource.add(features);
 
     if (features.length > 0) {
       const lons = features.map((f) => f.geometry.coordinates[0]);
