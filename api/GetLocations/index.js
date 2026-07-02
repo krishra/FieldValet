@@ -22,6 +22,8 @@ module.exports = async function (context, req) {
         id: e.rowKey,
         name: e.name,
         address: e.address || "",
+        city: e.city || "",
+        state: e.state || "",
         lat: e.lat ?? null,
         lng: e.lng ?? null,
       });
