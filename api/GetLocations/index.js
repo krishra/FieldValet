@@ -18,7 +18,13 @@ module.exports = async function (context, req) {
     for await (const e of iter) {
       // rowKey is a stable, key-safe id per site (base64url of the name) — used as
       // the locationId for chat threads.
-      rows.push({ id: e.rowKey, name: e.name, address: e.address || "" });
+      rows.push({
+        id: e.rowKey,
+        name: e.name,
+        address: e.address || "",
+        lat: e.lat ?? null,
+        lng: e.lng ?? null,
+      });
     }
 
     rows.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));

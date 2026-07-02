@@ -389,10 +389,18 @@ function renderView() {
   const tab = NAV.find((t) => t.id === state.tab);
   const sub = tab.subtabs[state.sub];
 
+  // Remove dashboard-specific layout override when navigating away.
+  document.getElementById("view").classList.remove("dashboard-view");
+
   // Close any live chat connection when navigating away from the Chats tab.
   if (tab.id !== "chats" && typeof teardownChats === "function") teardownChats();
   const title = tab.label;
   const where = sub ? `${tab.label} › ${sub}` : tab.label;
+
+  if (tab.id === "dashboard") {
+    renderDashboard();
+    return;
+  }
 
   if (tab.id === "sites" && sub === "Site info") {
     renderSitesList();
@@ -426,6 +434,147 @@ function renderView() {
       <strong>${where}</strong>
       This page is intentionally empty for now — navigation shell only.
     </div>`;
+}
+
+// ---- Dashboard map ----
+async function renderDashboard() {
+  const view = document.getElementById("view");
+  view.classList.add("dashboard-view");
+  view.innerHTML = `<div id="dashboard-map"></div>`;
+
+  if (!window.atlas) {
+    view.classList.remove("dashboard-view");
+    view.innerHTML = `<div class="placeholder"><strong>Map unavailable</strong>Azure Maps SDK failed to load.</div>`;
+    return;
+  }
+
+  let mapsKey, locations;
+  try {
+    const [cfgRes, locsRes] = await Promise.all([
+      apiFetch("/api/config"),
+      apiFetch("/api/locations"),
+    ]);
+    if (!cfgRes.ok) throw new Error(`Config: HTTP ${cfgRes.status}`);
+    if (!locsRes.ok) throw new Error(`Locations: HTTP ${locsRes.status}`);
+    const cfg = await cfgRes.json();
+    const locsData = await locsRes.json();
+    mapsKey = cfg.azureMapsKey;
+    locations = locsData.locations || [];
+  } catch (err) {
+    view.classList.remove("dashboard-view");
+    view.innerHTML = `<div class="placeholder"><strong>Dashboard unavailable</strong>${escHtml(err.message)}</div>`;
+    return;
+  }
+
+  if (!mapsKey) {
+    view.classList.remove("dashboard-view");
+    view.innerHTML = `<div class="placeholder"><strong>Map unavailable</strong>AZURE_MAPS_KEY is not configured in Azure app settings.</div>`;
+    return;
+  }
+
+  const map = new atlas.Map("dashboard-map", {
+    center: [-122.2, 47.5],
+    zoom: 9,
+    language: "en-US",
+    authOptions: { authType: "subscriptionKey", subscriptionKey: mapsKey },
+  });
+
+  map.events.add("ready", async () => {
+    map.resize();
+
+    const datasource = new atlas.source.DataSource();
+    map.sources.add(datasource);
+
+    const symbolLayer = new atlas.layer.SymbolLayer(datasource, null, {
+      iconOptions: { image: "marker-blue", anchor: "bottom", allowOverlap: true },
+    });
+    map.layers.add(symbolLayer);
+
+    // Load geocode cache from sessionStorage (fallback for legacy sites without stored coords)
+    const CACHE_KEY = "fv-geocache-v1";
+    let geocodeCache = {};
+    try { geocodeCache = JSON.parse(sessionStorage.getItem(CACHE_KEY) || "{}"); } catch {}
+
+    const features = [];
+    let cacheUpdated = false;
+    await Promise.all(
+      locations.map(async (loc) => {
+        // Prefer coordinates stored at creation time — no API call needed.
+        if (loc.lat != null && loc.lng != null) {
+          features.push(
+            new atlas.data.Feature(new atlas.data.Point([loc.lng, loc.lat]), {
+              name: loc.name,
+              address: loc.address,
+            })
+          );
+          return;
+        }
+
+        // Legacy sites without stored coords: fall back to client-side geocoding.
+        if (!loc.address) return;
+        let coords = geocodeCache[loc.address];
+        if (!coords) {
+          try {
+            const r = await fetch(
+              `https://atlas.microsoft.com/search/address/json?api-version=1.0` +
+                `&query=${encodeURIComponent(loc.address)}` +
+                `&subscription-key=${encodeURIComponent(mapsKey)}` +
+                `&limit=1`
+            );
+            const data = await r.json();
+            const pos = data.results?.[0]?.position;
+            if (pos) { coords = [pos.lon, pos.lat]; cacheUpdated = true; }
+          } catch {}
+        }
+        if (coords) {
+          geocodeCache[loc.address] = coords;
+          features.push(
+            new atlas.data.Feature(new atlas.data.Point(coords), {
+              name: loc.name,
+              address: loc.address,
+            })
+          );
+        }
+      })
+    );
+
+    if (cacheUpdated) {
+      try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(geocodeCache)); } catch {}
+    }
+
+    datasource.addMany(features);
+
+    if (features.length > 0) {
+      const lons = features.map((f) => f.geometry.coordinates[0]);
+      const lats = features.map((f) => f.geometry.coordinates[1]);
+      map.setCamera({
+        bounds: [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)],
+        padding: 60,
+      });
+    }
+
+    const popup = new atlas.Popup({ closeButton: true, pixelOffset: [0, -20] });
+    map.events.add("click", symbolLayer, (e) => {
+      if (!e.shapes?.[0]) return;
+      const props = e.shapes[0].getProperties();
+      popup.setOptions({
+        content:
+          `<div style="padding:10px 13px;max-width:220px;font-family:inherit">` +
+          `<strong style="font-size:13px;display:block">${escHtml(props.name)}</strong>` +
+          `<span style="font-size:12px;color:#666">${escHtml(props.address)}</span>` +
+          `</div>`,
+        position: e.shapes[0].getCoordinates(),
+      });
+      popup.open(map);
+    });
+
+    map.events.add("mouseover", symbolLayer, () => {
+      map.getCanvasContainer().style.cursor = "pointer";
+    });
+    map.events.add("mouseout", symbolLayer, () => {
+      map.getCanvasContainer().style.cursor = "";
+    });
+  });
 }
 
 // ---- Sites list ----

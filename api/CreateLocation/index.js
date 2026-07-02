@@ -57,6 +57,29 @@ module.exports = async function (context, req) {
       cleaningInstructions: body.cleaningInstructions || "",
     };
 
+    // Geocode the address so the Dashboard map can render without client-side API calls.
+    const geocodeQuery = [body.address, body.city, body.state, body.zip, body.country]
+      .filter((s) => s && s.trim())
+      .join(", ");
+    if (geocodeQuery && process.env.AZURE_MAPS_KEY) {
+      try {
+        const geoRes = await fetch(
+          `https://atlas.microsoft.com/search/address/json?api-version=1.0` +
+            `&query=${encodeURIComponent(geocodeQuery)}` +
+            `&subscription-key=${encodeURIComponent(process.env.AZURE_MAPS_KEY)}` +
+            `&limit=1`
+        );
+        const geoData = await geoRes.json();
+        const pos = geoData.results?.[0]?.position;
+        if (pos) {
+          entity.lat = pos.lat;
+          entity.lng = pos.lon;
+        }
+      } catch (geoErr) {
+        context.log.warn("Geocoding failed for", geocodeQuery, String(geoErr.message || geoErr));
+      }
+    }
+
     await client.upsertEntity(entity, "Replace");
 
     json(context, 201, { success: true, name: entity.name });

@@ -200,6 +200,18 @@ body {
   margin: 0;
   animation: fv-fade 0.32s ease;
 }
+
+/* Dashboard: map fills the full content cell */
+.view.dashboard-view {
+  padding: 0;
+  max-width: 100%;
+  overflow: hidden;
+  animation: none;
+}
+#dashboard-map {
+  width: 100%;
+  height: calc(100vh - var(--header-h));
+}
 @keyframes fv-fade {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: none; }
